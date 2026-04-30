@@ -1,0 +1,24 @@
+[package]
+name = "ninja-xtask"
+version = "0.1.0"
+edition = "2024"
+readme = "README.md"
+description = "xtask utilities that I use in most projects"
+authors = ["Mike Foster <https://github.com/MusicalNinjaDad>"]
+keywords = ["xtask"]
+homepage = "https://github.com/MusicalNinjaDad/rust"
+repository = "https://github.com/MusicalNinjaDad/rust"
+categories = ["development-tools::cargo-plugins"]
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.6.0", features = ["derive"] }
+exit_safely = "0.2.1"
+try_v2 = "0.4.2"
+
+[dev-dependencies]
+dircpy = "0.3.20"
+tempfile = "3.27.0"
+
+[build-dependencies]
+autocfg = "1.5.0"
