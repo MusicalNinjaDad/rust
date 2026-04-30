@@ -10,6 +10,8 @@ homepage = "https://github.com/MusicalNinjaDad/rust"
 repository = "https://github.com/MusicalNinjaDad/rust"
 categories = ["development-tools::cargo-plugins"]
 license = "MIT"
+rust-version = "1.85.1"
+
 
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
