@@ -64,11 +64,11 @@ RUN mkdir --mode=777 --parents $RUSTUP_HOME \
 USER root:rust
 WORKDIR /opt
     ADD https://sh.rustup.rs rustup/rustup-init
-    ADD https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz cargo/bin/
+    ADD --unpack=true https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz cargo/bin/
     # umask g+rwx for remaining commands
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
-    && rustup-init -v -y \
+    && rustup/rustup-init -v -y \
     && rustup component add \
             clippy \
             llvm-tools \
