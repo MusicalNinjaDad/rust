@@ -1,0 +1,145 @@
+name: "ci-build-release-binaries"
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  parse_tag:
+    runs-on: ubuntu-latest
+    env:
+      # e.g. binary-name_v1.2.3-alpha -> binary-name & v1.2.3-alpha
+      TAG_SPLIT: '^(.*)_(v[0-9]+\..*)$'
+    outputs:
+      binary_name: ${{ steps.split_tag.outputs.binary_name }}
+      version: ${{ steps.split_tag.outputs.version }}
+    steps:
+      - name: split tag
+        id: split_tag
+        run: |
+          if [[ ${{ github.event.release.tag_name }} =~ ${{ env.TAG_SPLIT }} ]]; then
+            echo "binary_name=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            echo "version=${BASH_REMATCH[2]}"  >> $GITHUB_OUTPUT
+          fi
+      - name: show_outputs
+        shell: bash
+        run: |
+          echo "Binary: '${{ steps.split_tag.outputs.binary_name }}'"
+          echo "Version: '${{ steps.split_tag.outputs.version }}'"
+
+  build_binaries:
+    needs: parse_tag
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
+            archive_ext: tgz
+            kind: linux
+
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
+            archive_ext: tgz
+            kind: linux
+
+          - target: x86_64-apple-darwin
+            os: macos-15-intel
+            archive_ext: tgz
+            kind: macos
+
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive_ext: tgz
+            kind: macos
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive_ext: zip
+            kind: windows
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout_tagged_commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.target_commitish }}
+
+      - name: set_output
+        id: set_output
+        shell: bash
+        run: |
+          echo "archive=${{ needs.parse_tag.outputs.binary_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}.${{ matrix.archive_ext }}" >> $GITHUB_OUTPUT
+          echo "subfolder=${{ needs.parse_tag.outputs.binary_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: show_outputs
+        shell: bash
+        run: |
+          echo "Archive: '${{ steps.set_output.outputs.archive }}'"
+          echo "Subfolder: '${{ steps.set_output.outputs.subfolder }}'"
+
+      - name: create_pkg_subfolder
+        shell: bash
+        run: mkdir ${{ steps.set_output.outputs.subfolder }}
+
+      - name: copy_files_to_pkg_subfolder
+        shell: bash
+        run: |
+          cp LICENSE-APACHE ${{ steps.set_output.outputs.subfolder }}
+          cp LICENSE-MIT ${{ steps.set_output.outputs.subfolder }}
+          cp README.md ${{ steps.set_output.outputs.subfolder }}
+
+      - name: install_rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: install musl-gcc
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: musl-tools # provides musl-gcc
+          version: 1.0
+
+      - name: build_${{ matrix.target }}_release_binary
+        shell: bash
+        run: cargo build --target=${{ matrix.target }} --release
+
+      - name: install_cargo_about
+        shell: bash
+        run: cargo install --locked cargo-about
+
+      - name: generate_dep_licenses_file
+        shell: bash
+        run: cargo about generate --output-file "${{ steps.set_output.outputs.subfolder }}/third-party-licenses.html" about.hbs
+
+      - name: pack_archive_macos
+        if: matrix.kind == 'macos'
+        shell: bash
+        run: |
+          cp  ./target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }} ${{ steps.set_output.outputs.subfolder }}
+          gtar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
+
+      - name: pack_archive_linux
+        if: matrix.kind == 'linux'
+        shell: bash
+        run: |
+          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }} ${{ steps.set_output.outputs.subfolder }}
+          tar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
+
+      - name: pack_archive_windows
+        if: matrix.kind == 'windows'
+        shell: bash
+        run: |
+          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }}.exe ./${{ steps.set_output.outputs.subfolder }}
+          7z a -tzip ${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
+
+      - name: upload_artifact
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ steps.set_output.outputs.archive }}
+          asset_name: ${{ steps.set_output.outputs.archive }}
+          asset_content_type: application/gzip

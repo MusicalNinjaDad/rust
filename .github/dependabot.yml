@@ -1,7 +1,12 @@
 version: 2
 updates:
+- package-ecosystem: "cargo"
+  directories:
+    - "/"
+  schedule:
+    interval: "daily"
 - package-ecosystem: "docker"
-  directory: "/"
+  directory: "/.devcontainer"
   schedule:
     interval: "daily"
 - package-ecosystem: "devcontainers"
