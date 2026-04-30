@@ -4,8 +4,8 @@ on:
   push:
     paths: 
     - "**.rs"
-    - "Cargo.toml"
-    - "rust-toolchain.toml"
+    - "**/Cargo.toml"
+    - "**/rust-toolchain.toml"
     - ".github/workflows/rust.yml"
   pull_request:
   workflow_call:
@@ -34,7 +34,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Run tests
-      run: cargo test
+      run: cd xtask && cargo test
 
   lint:
     needs: skip_check
@@ -45,7 +45,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: clippy
-      run: cargo clippy -- --deny warnings
+      run: cd xtask && cargo clippy -- --deny warnings
 
   fmt:
     needs: skip_check
@@ -56,7 +56,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: fmt
-      run: cargo fmt --check
+      run: cd xtask && cargo fmt --check
 
   msrv:
     needs: skip_check
@@ -74,4 +74,4 @@ jobs:
       with:
         tool: cargo-msrv
     - name: check MSRV
-      run: cargo msrv verify
+      run: cd xtask && cargo msrv verify
