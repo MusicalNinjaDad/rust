@@ -1,5 +1,9 @@
 name: Dependabot automation
-on: pull_request
+on:
+  pull_request:
+    paths-ignore:
+      # Do not auto-approve changes to publishing workflow!
+      - ".github/workflows/deploy-rust.yml"
 
 permissions:
   contents: write
@@ -8,11 +12,12 @@ permissions:
 jobs:
   merge:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'MusicalNinjas/rust'
+                                                                  # Manually set the repo name so this doesn't run on forks
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'MusicalNinjaDad/rust'
     steps:
-      - name: Check this really is a dependabot PR
+      - name: Ensure this is a valid dependabot PR
         id: metadata
-        uses: dependabot/fetch-metadata@ffa630c65fa7e0ecfa0625b5ceda64399aea1b36
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Enable auto-merge for Dependabot PRs
