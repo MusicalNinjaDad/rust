@@ -1,6 +1,6 @@
 # ninja-xtask
 
-These are the xtask commands that I got annyoed copying to every single rust repo of mine.
+These are the xtask commands that I got annoyed copying to every single rust repo of mine.
 
 So I put them here and now just cargo binstall them.
 
