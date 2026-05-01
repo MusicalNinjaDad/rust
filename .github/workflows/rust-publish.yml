@@ -176,7 +176,7 @@ jobs:
         run: rustup set profile default && rustup install --target ${{ matrix.target }}
 
       - name: install zig for cross compilation
-        uses: https://codeberg.org/mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@v2
 
       - name: install build tooling
         uses: taiki-e/install-action@v2
