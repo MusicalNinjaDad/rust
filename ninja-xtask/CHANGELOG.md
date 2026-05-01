@@ -1,5 +1,10 @@
 # Changelog ninja-xtask
 
+## v0.2.3
+
+- no longer publish pre-built windows binaries as the runner is super slow
+- dogfood cargo ninja for build workflow
+
 ## v0.2.2
 
 - allow `build --target`
