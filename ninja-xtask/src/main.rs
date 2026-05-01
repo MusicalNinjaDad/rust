@@ -1,19 +1,23 @@
 use std::path::Path;
 
 use clap::{Parser, Subcommand};
+use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use ninja_xtask::{
     Exit,
     commands::{build, clippy, clippy_tests, fmt, git_add, test},
 };
 
 #[derive(Parser)]
-#[command(version)]
-struct XTask {
+#[command(name = "cargo")]
+#[command(bin_name = "cargo")]
+#[command(styles = CARGO_STYLING)]
+enum CargoCmd {
     #[command(subcommand)]
-    command: Command,
+    Ninja(Command),
 }
 
 #[derive(Subcommand)]
+#[command(version)]
 enum Command {
     /// fmt, lint & test then stage everything in git if all is good
     Stage,
@@ -29,10 +33,10 @@ enum Command {
 }
 
 fn main() -> Exit<()> {
-    let xtask = XTask::try_parse()?;
+    let CargoCmd::Ninja(xtask) = CargoCmd::try_parse()?;
     let root = Path::new(".");
 
-    match &xtask.command {
+    match &xtask {
         Command::Stage => {
             let fmt = fmt(root);
             Exit::from(fmt)?;
