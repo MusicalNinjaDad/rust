@@ -53,20 +53,17 @@ pub fn test(root: &Path) -> Spawned {
         .into_spawned("tests")
 }
 
-/// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `glibc` specified)
-/// optionally performing a release build (default is cargo's default profile)
+/// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
+/// specified) optionally performing a release build (default is cargo's default profile).
 ///
-/// #### Build target (TODO: take a specific target & other cargo args)
-/// - For a given `glibc`: `x86_64-unknown-linux-gnu`
-/// - Otherwise: cargo default target
-pub fn build(root: &Path, glibc: &Option<String>, release: &bool) -> Spawned {
-    let (builder, target) = match glibc {
-        Some(version) => {
-            let target = format!("x86_64-unknown-linux-gnu.{}", version);
-            ("zigbuild", vec!["--target".to_string(), target])
-        }
-        None => ("build", vec![]),
-    };
+/// If getting the default host profile via rustc fails will fall back to x86_64-unknown-linux-gnu
+pub fn build(
+    root: &Path,
+    target: &Option<String>,
+    glibc: &Option<String>,
+    release: &bool,
+) -> Spawned {
+    let BuildArgs { builder, target } = BuildArgs::parse(target, glibc);
     let release = if *release { Some("--release") } else { None };
     Command::new("cargo")
         .current_dir(root)
@@ -77,4 +74,96 @@ pub fn build(root: &Path, glibc: &Option<String>, release: &bool) -> Spawned {
         .stdout(Stdio::piped())
         .spawn()
         .into_spawned("build")
+}
+
+struct BuildArgs {
+    builder: &'static str,
+    target: Vec<String>,
+}
+
+impl BuildArgs {
+    fn parse(target: &Option<String>, glibc: &Option<String>) -> Self {
+        if target.is_none() && glibc.is_none() {
+            return Self {
+                builder: "build",
+                target: vec![],
+            };
+        }
+
+        let builder = "zigbuild";
+        let target_triple = target.clone().unwrap_or_else(default_triple);
+
+        let full_target = match glibc {
+            Some(version) => format!("{}.{}", target_triple, version),
+            None => target_triple,
+        };
+        Self {
+            builder,
+            target: vec!["--target".into(), full_target],
+        }
+    }
+}
+
+fn default_triple() -> String {
+    match Command::new("rustc")
+        .arg("--print")
+        .arg("host-tuple")
+        .output()
+    {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
+        Err(_) => "x86_64-unknown-linux-gnu".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod generate_target {
+        use super::*;
+
+        const FLAG: &str = "--target";
+
+        #[test]
+        fn glibc() {
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), format!("{}.2.41", default_triple())];
+            let generated = BuildArgs::parse(&None, &Some("2.41".into()));
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "zigbuild");
+            assert_eq!(target, expected_target)
+        }
+
+        #[test]
+        fn default() {
+            let expected_target: Vec<String> = vec![];
+            let generated = BuildArgs::parse(&None, &None);
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "build");
+            assert_eq!(target, expected_target)
+        }
+
+        #[test]
+        fn both_specified() {
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), "x86_64-unknown-linux-musl.2.41".into()];
+            let generated = BuildArgs::parse(
+                &Some("x86_64-unknown-linux-musl".into()),
+                &Some("2.41".into()),
+            );
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "zigbuild");
+            assert_eq!(target, expected_target)
+        }
+
+        #[test]
+        fn triple() {
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), "x86_64-unknown-linux-musl".into()];
+            let generated = BuildArgs::parse(&Some("x86_64-unknown-linux-musl".into()), &None);
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "zigbuild");
+            assert_eq!(target, expected_target)
+        }
+    }
 }

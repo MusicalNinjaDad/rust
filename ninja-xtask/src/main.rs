@@ -29,6 +29,9 @@ enum Command {
         /// build a release build (default is cargo's default profile, usually debug)
         #[arg(short, long)]
         release: bool,
+        /// build for a given target
+        #[arg(long)]
+        target: Option<String>,
     },
 }
 
@@ -48,8 +51,12 @@ fn main() -> Exit<()> {
             let git = git_add(root);
             Exit::from(git)
         }
-        Command::Build { glibc, release } => {
-            let build = build(root, glibc, release);
+        Command::Build {
+            glibc,
+            release,
+            target,
+        } => {
+            let build = build(root, target, glibc, release);
             Exit::from(build)
         }
     }
