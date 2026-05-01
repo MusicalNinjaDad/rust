@@ -85,8 +85,8 @@ jobs:
       - test
       - lint
     environment: crates.io
-    # permissions:
-    #   id-token: write
+    permissions:
+      id-token: write
     defaults:
       run:
         working-directory: ${{ needs.parse_tag.outputs.crate_name }}
