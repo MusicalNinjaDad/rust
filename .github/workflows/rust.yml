@@ -36,7 +36,7 @@ jobs:
         uses: druzsan/setup-matrix@e52eed47b195a3c2157f91e1baceaa82df2276f2 #v2
         with:
           matrix: |
-            crates: ["ninja-xtask", "crate2"]
+            crate: ["ninja-xtask", "crate2"]
 
   test:
     needs:
