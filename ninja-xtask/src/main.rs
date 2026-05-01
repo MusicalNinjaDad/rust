@@ -15,8 +15,8 @@ struct XTask {
 
 #[derive(Subcommand)]
 enum Command {
-    /// git add if all is good
-    Add,
+    /// fmt, lint & test then stage everything in git if all is good
+    Stage,
     /// build (optionally with zigbuild for a given glibc version)
     Build {
         /// build for a specific glibc version (WSL-Ubuntu is 2.35)
@@ -33,7 +33,7 @@ fn main() -> Exit<()> {
     let root = Path::new(".");
 
     match &xtask.command {
-        Command::Add => {
+        Command::Stage => {
             let fmt = fmt(root);
             Exit::from(fmt)?;
             let clippy = clippy(root);
