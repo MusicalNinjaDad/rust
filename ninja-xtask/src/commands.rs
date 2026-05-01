@@ -3,7 +3,6 @@ use std::{
     process::{Command, Stdio},
 };
 
-use clap::builder;
 
 use crate::{Cmd, CmdExt as _, Spawned, SpawnedExt as _};
 
@@ -101,14 +100,25 @@ impl BuildArgs {
         }
 
         let builder = "zigbuild";
-        let default_triple = "x86_64-unknown-linux-gnu".into();
-        let target_triple= target.as_ref().unwrap_or(&default_triple);
+        let default_triple = || {
+            let rustc = Command::new("rustc")
+                .arg("--print")
+                .arg("host-tuple")
+                .output()
+                .expect("rustc default tuple")
+                .stdout;
+            String::from_utf8_lossy(&rustc).trim().to_string()
+        };
+        let target_triple = target.clone().unwrap_or_else(default_triple);
 
         let full_target = match glibc {
-            Some(version) => &format!("{}.{}", target_triple, version),
+            Some(version) => format!("{}.{}", target_triple, version),
             None => target_triple,
         };
-        Self { builder, target: vec!["--target".into(), full_target.clone()] }
+        Self {
+            builder,
+            target: vec!["--target".into(), full_target],
+        }
     }
 }
 
@@ -142,8 +152,12 @@ mod tests {
 
         #[test]
         fn both_specified() {
-            let expected_target: Vec<String> = vec![FLAG.into(), "x86_64-unknown-linux-musl.2.41".into()];
-            let generated = BuildArgs::parse(&Some("x86_64-unknown-linux-musl".into()), &Some("2.41".into()));
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), "x86_64-unknown-linux-musl.2.41".into()];
+            let generated = BuildArgs::parse(
+                &Some("x86_64-unknown-linux-musl".into()),
+                &Some("2.41".into()),
+            );
             let BuildArgs { builder, target } = generated;
             assert_eq!(builder, "zigbuild");
             assert_eq!(target, expected_target)
@@ -151,7 +165,8 @@ mod tests {
 
         #[test]
         fn triple() {
-            let expected_target: Vec<String> = vec![FLAG.into(), "x86_64-unknown-linux-musl".into()];
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), "x86_64-unknown-linux-musl".into()];
             let generated = BuildArgs::parse(&Some("x86_64-unknown-linux-musl".into()), &None);
             let BuildArgs { builder, target } = generated;
             assert_eq!(builder, "zigbuild");
