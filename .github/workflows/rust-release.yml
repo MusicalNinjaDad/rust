@@ -6,12 +6,6 @@ on:
 
 jobs:
 
-  quality_check:
-    permissions:
-      contents: read
-      issues: write
-    uses: ./.github/workflows/rust-stability.yml
-
   parse_tag:
     runs-on: ubuntu-latest
     env:
@@ -41,10 +35,55 @@ jobs:
         run: |   
           echo binary="${{ contains(fromJSON('["ninja-xtask"]'), steps.split_tag.outputs.crate_name) }}" >> $GITHUB_OUTPUT
 
+  test:
+    needs:
+      - parse_tag
+    strategy:
+      fail-fast: true
+      matrix:
+        channel: ["stable", "beta", "nightly"]
+    defaults:
+      run:
+        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.release.target_commitish }}
+    - name: update rust
+      run: rustup set profile default && rustup install ${{ matrix.channel }}
+    - name: Set bootstrap
+      run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV || true
+    - name: Run tests
+      run: cargo "+${{ matrix.channel }}" test --no-fail-fast
+
+  lint:
+    needs:
+      - parse_tag
+    strategy:
+      fail-fast: true
+      matrix:
+        channel: ["stable", "beta", "nightly"]
+    defaults:
+      run:
+        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.release.target_commitish }}
+    - name: update rust
+      run: rustup set profile default && rustup install ${{ matrix.channel }}
+    - name: Set bootstrap
+      run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV  || true
+    - name: clippy
+      run: cargo +${{ matrix.channel }} clippy -- --deny warnings
+
   publish_lib:
     needs:
       - parse_tag
-      - quality_check
+      - test
+      - lint
     environment: crates.io
     defaults:
       run:
@@ -52,6 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.release.target_commitish }}
     - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
       id: auth
     - name: Publish
@@ -63,7 +104,8 @@ jobs:
   build_binaries:
     needs: 
       - parse_tag
-      - quality_check
+      - test
+      - lint
     if: needs.parse_tag.outputs.binary == 'true'
     defaults:
       run:
