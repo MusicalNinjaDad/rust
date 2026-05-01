@@ -191,9 +191,9 @@ jobs:
           cp LICENSE ${{ steps.set_output.outputs.subfolder }}
           cp README.md ${{ steps.set_output.outputs.subfolder }}
 
-      # Install manually as different crates my have custom toolchains defined
+      # Install manually as different crates may have custom toolchains defined
       - name: install rust
-        run: rustup set profile default && rustup install
+        run: rustup set profile default && rustup install --target ${{ matrix.target }}
 
       - name: install musl-gcc
         if: matrix.target == 'x86_64-unknown-linux-musl'
