@@ -84,6 +84,7 @@ impl CmdExt for Result<Output, io::Error> {
     }
 }
 
+// TODO: #10 Provide stdout & error code on failure
 impl From<Cmd> for Exit<()> {
     fn from(cmd: Cmd) -> Self {
         match cmd.result {
