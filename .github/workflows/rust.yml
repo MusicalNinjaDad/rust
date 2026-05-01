@@ -44,6 +44,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
@@ -60,6 +61,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
@@ -76,6 +78,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
@@ -92,6 +95,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
+      fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
