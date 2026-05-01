@@ -148,5 +148,14 @@ mod tests {
             assert_eq!(builder, "zigbuild");
             assert_eq!(target, expected_target)
         }
+
+        #[test]
+        fn triple() {
+            let expected_target: Vec<String> = vec![FLAG.into(), "x86_64-unknown-linux-musl".into()];
+            let generated = BuildArgs::parse(&Some("x86_64-unknown-linux-musl".into()), &None);
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "zigbuild");
+            assert_eq!(target, expected_target)
+        }
     }
 }
