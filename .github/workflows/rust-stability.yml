@@ -1,0 +1,82 @@
+name: Monthly stability checks
+
+on:
+  pull_request:
+  push:
+    paths:
+      - ".github/workflows/rust-stability.yml"
+  schedule:
+    - cron: '0 3 6 * *'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+
+  # indirection needed as fromJson will not read env context in matrix strategy
+  crates:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+    steps:
+      - id: setup-matrix
+        uses: druzsan/setup-matrix@e52eed47b195a3c2157f91e1baceaa82df2276f2 #v2
+        with:
+          matrix: |
+            channel: ["stable", "beta", "nightly"]
+            crate: ["ninja-xtask"]
+
+  test:
+    needs: crates
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: update rust
+      run: rustup set profile default && rustup install ${{ matrix.channel }}
+    - name: Set bootstrap
+      run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV || true
+    - name: Run tests
+      run: cargo "+${{ matrix.channel }}" test --no-fail-fast
+
+  lint:
+    needs: crates
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: update rust
+      run: rustup set profile default && rustup install ${{ matrix.channel }}
+    - name: Set bootstrap
+      run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV  || true
+    - name: clippy
+      run: cargo +${{ matrix.channel }} clippy -- --deny warnings
+
+  report:
+    if: ${{ always() }}
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Create issue on failure
+      if: ${{ github.event_name != 'pull_request' && (needs.test.result == 'failure' || needs.lint.result == 'failure') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh issue create --title "Monthly tests failed" --body "Run ID: $GITHUB_RUN_ID" --assignee "MusicalNinjaDad"

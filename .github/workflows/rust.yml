@@ -1,0 +1,113 @@
+name: Rust
+
+on:
+  push:
+    paths: 
+    - "**.rs"
+    - "**/Cargo.toml"
+    - "**/rust-toolchain.toml"
+    - ".github/workflows/rust.yml"
+  pull_request:
+  workflow_call:
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+  skip_check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5.3.1
+        with:
+          concurrent_skipping: 'same_content_newer'
+
+  # indirection needed as fromJson will not read env context in matrix strategy
+  crates:
+    needs: skip_check
+    if: needs.skip_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+    steps:
+      - id: setup-matrix
+        uses: druzsan/setup-matrix@e52eed47b195a3c2157f91e1baceaa82df2276f2 #v2
+        with:
+          matrix: |
+            crate: ["ninja-xtask"]
+
+  test:
+    needs:
+      - skip_check
+      - crates
+    if: needs.skip_check.outputs.should_skip != 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Run tests
+      run: cargo test
+
+  lint:
+    needs:
+      - skip_check
+      - crates
+    if: needs.skip_check.outputs.should_skip != 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: clippy
+      run: cargo clippy -- --deny warnings
+
+  fmt:
+    needs:
+      - skip_check
+      - crates
+    if: needs.skip_check.outputs.should_skip != 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: fmt
+      run: cargo fmt --check
+
+  # msrv:
+  #   needs:
+  #     - skip_check
+  #     - crates
+  #   if: needs.skip_check.outputs.should_skip != 'true'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+  #   defaults:
+  #     run:
+  #       working-directory: ${{ matrix.crate }}
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     RUSTC_BOOTSTRAP: 1
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #   - name: install cargo-msrv
+  #     uses: taiki-e/install-action@v2.75.27
+  #     with:
+  #       tool: cargo-msrv
+  #   - name: check MSRV
+  #     run: cargo msrv verify
