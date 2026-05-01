@@ -120,5 +120,15 @@ mod tests {
             assert_eq!(builder, "zigbuild");
             assert_eq!(target, expected_target)
         }
+
+        #[test]
+        fn default() {
+            let expected_target: Vec<String> =
+                vec![];
+            let generated = BuildArgs::parse(&None, &None);
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "build");
+            assert_eq!(target, expected_target)
+        }
     }
 }
