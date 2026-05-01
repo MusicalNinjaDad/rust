@@ -2,7 +2,7 @@ version: 2
 updates:
 - package-ecosystem: "cargo"
   directories:
-    - "xtask"
+    - "ninja-xtask"
   schedule:
     interval: "daily"
 - package-ecosystem: "docker"
