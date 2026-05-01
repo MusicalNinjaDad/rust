@@ -181,7 +181,7 @@ jobs:
       - name: install build tooling
         uses: taiki-e/install-action@v2
         with:
-          tool: "cargo-zigbuild, ninja-xtask, cargo-about"
+          tool: "cargo-zigbuild,ninja-xtask,cargo-about"
 
       - name: build ${{ matrix.target }} ${{ matrix.glibc }} --release
         run: cargo ninja build --target=${{ matrix.target }} ${{ matrix.glibc }} --release
