@@ -1,6 +1,6 @@
 [package]
 name = "ninja-xtask"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 readme = "README.md"
 description = "xtask utilities that I use in most projects"
@@ -20,6 +20,7 @@ pkg-url = "{ repo }/releases/download/{ name }_v{ version }/{ name }-{ target }-
 
 [dependencies]
 clap = { version = "4.6.0", features = ["derive"] }
+clap-cargo = "0.18.3"
 exit_safely = "0.2.1"
 try_v2 = "0.4.2"
 

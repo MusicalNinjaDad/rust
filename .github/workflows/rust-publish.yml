@@ -184,6 +184,7 @@ jobs:
         run: |
           echo "Archive: '${{ steps.set_output.outputs.archive }}'"
           echo "Subfolder: '${{ steps.set_output.outputs.subfolder }}'"
+          echo "Binary: '${{ steps.cargo_toml.outputs.bin }}'"
 
       - name: create_pkg_subfolder
         shell: bash
