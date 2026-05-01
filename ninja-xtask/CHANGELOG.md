@@ -1,5 +1,9 @@
 # Changelog ninja-xtask
 
+## v0.2.4
+
+- fix build workflow for publishing binaries
+
 ## v0.2.3
 
 - no longer publish pre-built windows binaries as the runner is super slow
