@@ -175,8 +175,7 @@ jobs:
       - name: copy_files_to_pkg_subfolder
         shell: bash
         run: |
-          cp LICENSE-APACHE ${{ steps.set_output.outputs.subfolder }}
-          cp LICENSE-MIT ${{ steps.set_output.outputs.subfolder }}
+          cp LICENSE ${{ steps.set_output.outputs.subfolder }}
           cp README.md ${{ steps.set_output.outputs.subfolder }}
 
       # Install manually as different crates my have custom toolchains defined
