@@ -21,6 +21,9 @@
                 "tamasfe.even-better-toml"
             ],
             "settings": {
+                "rust-analyzer.linkedProjects": [
+                    "ninja-xtask/Cargo.toml"
+                ],
                 // rust
                 "rust-analyzer.interpret.tests": true,
                 "rust-analyzer.testExplorer": true,
