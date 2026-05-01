@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: update rust
-      run: rustup update
+      run: pwd && ls -al && cat rust-toolchain.toml && rustup update
     - name: Set bootstrap
       run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV || true
     - name: Run tests
