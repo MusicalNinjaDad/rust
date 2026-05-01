@@ -240,4 +240,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} './${{ needs.parse_tag.outputs.crate_name }}/${{ steps.set_output.outputs.archive }}'
+          gh release upload ${{ github.event.release.tag_name }} '${{ steps.set_output.outputs.archive }}'
