@@ -3,7 +3,7 @@ on:
   pull_request:
     paths-ignore:
       # Do not auto-approve changes to publishing workflow!
-      - ".github/workflows/deploy-rust.yml"
+      - ".github/workflows/*-publish.yml"
 
 permissions:
   contents: write

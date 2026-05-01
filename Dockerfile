@@ -76,6 +76,7 @@ WORKDIR /opt
             rustfmt \
             rust-src \
     && cargo binstall --secure -y \ 
+            cargo-about \
             cargo-cyclonedx \
             cargo-expand \
             cargo-machete \
