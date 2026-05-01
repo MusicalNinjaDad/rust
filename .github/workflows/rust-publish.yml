@@ -122,6 +122,8 @@ jobs:
       - test
       - lint
     if: needs.parse_tag.outputs.binary == 'true'
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: ${{ needs.parse_tag.outputs.crate_name }}
