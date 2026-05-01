@@ -1,5 +1,9 @@
 # Changelog ninja-xtask
 
+## v0.2.2
+
+- allow `build --target`
+
 ## v0.2.1
 
 - fixed invocation as `cargo ninja`
