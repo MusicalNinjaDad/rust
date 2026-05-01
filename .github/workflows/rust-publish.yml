@@ -85,8 +85,8 @@ jobs:
       - test
       - lint
     environment: crates.io
-    permissions:
-      id-token: write
+    # permissions:
+    #   id-token: write
     defaults:
       run:
         working-directory: ${{ needs.parse_tag.outputs.crate_name }}
@@ -98,14 +98,16 @@ jobs:
     # Install manually as different crates my have custom toolchains defined
     - name: install rust
       run: rustup set profile default && rustup install
-    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
-      id: auth
+    # # Use OIDC for updating existing crates
+    # - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
+    #   id: auth
+    # - name: Publish
+    #   env:
+    #     CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+    # # # OR # # #
+    # Use API Token ONLY for creating a new crate
     - name: Publish
       env:
-        # # Use IODC for updating existing crates
-        # CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-
-        # Use API Token ONLY for creating a new crate
         CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       run:
         cargo publish
