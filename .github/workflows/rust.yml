@@ -12,6 +12,8 @@ on:
 
 env:
     CARGO_TERM_COLOR: always
+    # Comma separated list of crates to check: '"crate1","crate_2"'
+    CRATES: '"ninja-xtask"'
 
 jobs:
 
@@ -25,48 +27,82 @@ jobs:
         with:
           concurrent_skipping: 'same_content_newer'
 
-  test:
+  # indirection needed as fromJson will not read env context in matrix strategy
+  crates:
     needs: skip_check
     if: needs.skip_check.outputs.should_skip != 'true'
-
     runs-on: ubuntu-latest
-    
+    outputs:
+      crates: ${{ steps.crates.outputs.crates }}
+    steps:
+      - id: crates
+        run: echo crates="${{ env.CRATES }}" >> $GITHUB_OUTPUT
+
+  test:
+    needs:
+      - skip_check
+      - crates
+    if: needs.skip_check.outputs.should_skip != 'true'
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - name: Run tests
-      run: cd xtask && cargo test
+      run: cargo test
 
   lint:
-    needs: skip_check
+    needs:
+      - skip_check
+      - crates
     if: needs.skip_check.outputs.should_skip != 'true'
-
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v6
     - name: clippy
-      run: cd xtask && cargo clippy -- --deny warnings
+      run: cargo clippy -- --deny warnings
 
   fmt:
-    needs: skip_check
+    needs:
+      - skip_check
+      - crates
     if: needs.skip_check.outputs.should_skip != 'true'
-
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v6
     - name: fmt
-      run: cd xtask && cargo fmt --check
+      run: cargo fmt --check
 
   msrv:
-    needs: skip_check
+    needs:
+      - skip_check
+      - crates
     if: needs.skip_check.outputs.should_skip != 'true'
-
+    strategy:
+      matrix:
+        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
-
     env:
       RUSTC_BOOTSTRAP: 1
-
     steps:
     - uses: actions/checkout@v6
     - name: install cargo-msrv
@@ -74,4 +110,4 @@ jobs:
       with:
         tool: cargo-msrv
     - name: check MSRV
-      run: cd xtask && cargo msrv verify
+      run: cargo msrv verify
