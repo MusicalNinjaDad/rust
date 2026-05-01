@@ -105,6 +105,8 @@ jobs:
       run:
         cargo publish
 
+  # Based upon action used by cargo-msrv.
+  # Maybe the file type is incorrect for windows?
   build_binaries:
     needs: 
       - parse_tag
