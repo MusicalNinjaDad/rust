@@ -1,17 +1,25 @@
-name: "ci-build-release-binaries"
+name: "Build binaries & publish libs"
 
 on:
   release:
     types: [published]
 
 jobs:
+
+  quality_check:
+    permissions:
+      contents: read
+      issues: write
+    uses: ./.github/workflows/rust-stability.yml
+
   parse_tag:
     runs-on: ubuntu-latest
     env:
       # e.g. binary-name_v1.2.3-alpha -> binary-name & v1.2.3-alpha
       TAG_SPLIT: '^(.*)_(v[0-9]+\..*)$'
     outputs:
-      binary_name: ${{ steps.split_tag.outputs.crate_name }}
+      binary: ${{ steps.is_binary.outputs.binary }}
+      crate_name: ${{ steps.split_tag.outputs.crate_name }}
       version: ${{ steps.split_tag.outputs.version }}
     defaults:
       run:
@@ -29,11 +37,37 @@ jobs:
           echo "Crate: '${{ steps.split_tag.outputs.crate_name }}'"
           echo "Version: '${{ steps.split_tag.outputs.version }}'"
       - name: is binary?
-        if: contains(fromJSON('["ninja-xtask"]'), steps.split_tag.outputs.crate_name)
-        run: false
+        id: is_binary
+        run: |   
+          echo binary="${{ contains(fromJSON('["ninja-xtask"]'), steps.split_tag.outputs.crate_name) }}" >> $GITHUB_OUTPUT
+
+  publish_lib:
+    needs:
+      - parse_tag
+      - quality_check
+    environment: crates.io
+    defaults:
+      run:
+        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
+      id: auth
+    - name: Publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      run:
+        cargo publish
 
   build_binaries:
-    needs: parse_tag
+    needs: 
+      - parse_tag
+      - quality_check
+    if: needs.parse_tag.outputs.binary == 'true'
+    defaults:
+      run:
+        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
     strategy:
       fail-fast: false
       matrix:
@@ -74,8 +108,8 @@ jobs:
         id: set_output
         shell: bash
         run: |
-          echo "archive=${{ needs.parse_tag.outputs.binary_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}.${{ matrix.archive_ext }}" >> $GITHUB_OUTPUT
-          echo "subfolder=${{ needs.parse_tag.outputs.binary_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "archive=${{ needs.parse_tag.outputs.crate_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}.${{ matrix.archive_ext }}" >> $GITHUB_OUTPUT
+          echo "subfolder=${{ needs.parse_tag.outputs.crate_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}" >> $GITHUB_OUTPUT
 
       - name: show_outputs
         shell: bash
@@ -122,21 +156,21 @@ jobs:
         if: matrix.kind == 'macos'
         shell: bash
         run: |
-          cp  ./target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }} ${{ steps.set_output.outputs.subfolder }}
+          cp  ./target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }} ${{ steps.set_output.outputs.subfolder }}
           gtar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: pack_archive_linux
         if: matrix.kind == 'linux'
         shell: bash
         run: |
-          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }} ${{ steps.set_output.outputs.subfolder }}
+          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }} ${{ steps.set_output.outputs.subfolder }}
           tar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: pack_archive_windows
         if: matrix.kind == 'windows'
         shell: bash
         run: |
-          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.binary_name }}.exe ./${{ steps.set_output.outputs.subfolder }}
+          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }}.exe ./${{ steps.set_output.outputs.subfolder }}
           7z a -tzip ${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: upload_artifact
