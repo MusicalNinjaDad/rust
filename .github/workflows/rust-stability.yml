@@ -19,14 +19,27 @@ env:
 
 jobs:
 
+  # indirection needed as fromJson will not read env context in matrix strategy
+  crates:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
+    steps:
+      - id: setup-matrix
+        uses: druzsan/setup-matrix@e52eed47b195a3c2157f91e1baceaa82df2276f2 #v2
+        with:
+          matrix: |
+            channel: ["stable", "beta", "nightly"]
+            crate: ["ninja-xtask"]
+
   test:
+    needs: crates
     strategy:
       fail-fast: false
-      matrix:
-        channel: ["stable", "beta", "nightly"]
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
-        working-directory: ./xtask
+        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -38,13 +51,13 @@ jobs:
       run: cargo "+${{ matrix.channel }}" test --no-fail-fast
 
   lint:
+    needs: crates
     strategy:
       fail-fast: false
-      matrix:
-        channel: ["stable", "beta", "nightly"]
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
-        working-directory: ./xtask
+        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
