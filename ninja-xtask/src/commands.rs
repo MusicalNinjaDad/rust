@@ -1,8 +1,8 @@
 use std::{
+    io,
     path::Path,
     process::{Command, Stdio},
 };
-
 
 use crate::{Cmd, CmdExt as _, Spawned, SpawnedExt as _};
 
@@ -100,15 +100,6 @@ impl BuildArgs {
         }
 
         let builder = "zigbuild";
-        let default_triple = || {
-            let rustc = Command::new("rustc")
-                .arg("--print")
-                .arg("host-tuple")
-                .output()
-                .expect("rustc default tuple")
-                .stdout;
-            String::from_utf8_lossy(&rustc).trim().to_string()
-        };
         let target_triple = target.clone().unwrap_or_else(default_triple);
 
         let full_target = match glibc {
@@ -119,6 +110,17 @@ impl BuildArgs {
             builder,
             target: vec!["--target".into(), full_target],
         }
+    }
+}
+
+fn default_triple() -> String {
+    match Command::new("rustc")
+        .arg("--print")
+        .arg("host-tuple")
+        .output()
+    {
+        Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
+        Err(_) => "x86_64-unknown-linux-gnu".to_string(),
     }
 }
 
@@ -134,7 +136,7 @@ mod tests {
         #[test]
         fn glibc() {
             let expected_target: Vec<String> =
-                vec![FLAG.into(), "x86_64-unknown-linux-gnu.2.41".into()];
+                vec![FLAG.into(), format!("{}.2.41", default_triple())];
             let generated = BuildArgs::parse(&None, &Some("2.41".into()));
             let BuildArgs { builder, target } = generated;
             assert_eq!(builder, "zigbuild");

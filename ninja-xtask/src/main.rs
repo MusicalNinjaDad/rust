@@ -51,7 +51,11 @@ fn main() -> Exit<()> {
             let git = git_add(root);
             Exit::from(git)
         }
-        Command::Build { glibc, release, target } => {
+        Command::Build {
+            glibc,
+            release,
+            target,
+        } => {
             let build = build(root, target, glibc, release);
             Exit::from(build)
         }
