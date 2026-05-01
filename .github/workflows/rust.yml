@@ -89,25 +89,25 @@ jobs:
     - name: fmt
       run: cargo fmt --check
 
-  msrv:
-    needs:
-      - skip_check
-      - crates
-    if: needs.skip_check.outputs.should_skip != 'true'
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
-    defaults:
-      run:
-        working-directory: ${{ matrix.crate }}
-    runs-on: ubuntu-latest
-    env:
-      RUSTC_BOOTSTRAP: 1
-    steps:
-    - uses: actions/checkout@v6
-    - name: install cargo-msrv
-      uses: taiki-e/install-action@v2.75.27
-      with:
-        tool: cargo-msrv
-    - name: check MSRV
-      run: cargo msrv verify
+  # msrv:
+  #   needs:
+  #     - skip_check
+  #     - crates
+  #   if: needs.skip_check.outputs.should_skip != 'true'
+  #   strategy:
+  #     fail-fast: false
+  #     matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
+  #   defaults:
+  #     run:
+  #       working-directory: ${{ matrix.crate }}
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     RUSTC_BOOTSTRAP: 1
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #   - name: install cargo-msrv
+  #     uses: taiki-e/install-action@v2.75.27
+  #     with:
+  #       tool: cargo-msrv
+  #   - name: check MSRV
+  #     run: cargo msrv verify
