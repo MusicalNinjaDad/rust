@@ -11,21 +11,26 @@ jobs:
       # e.g. binary-name_v1.2.3-alpha -> binary-name & v1.2.3-alpha
       TAG_SPLIT: '^(.*)_(v[0-9]+\..*)$'
     outputs:
-      binary_name: ${{ steps.split_tag.outputs.binary_name }}
+      binary_name: ${{ steps.split_tag.outputs.crate_name }}
       version: ${{ steps.split_tag.outputs.version }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: split tag
         id: split_tag
         run: |
           if [[ ${{ github.event.release.tag_name }} =~ ${{ env.TAG_SPLIT }} ]]; then
-            echo "binary_name=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+            echo "crate_name=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
             echo "version=${BASH_REMATCH[2]}"  >> $GITHUB_OUTPUT
           fi
-      - name: show_outputs
-        shell: bash
+      - name: show outputs
         run: |
-          echo "Binary: '${{ steps.split_tag.outputs.binary_name }}'"
+          echo "Crate: '${{ steps.split_tag.outputs.crate_name }}'"
           echo "Version: '${{ steps.split_tag.outputs.version }}'"
+      - name: is binary?
+        if: contains(fromJSON('["ninja-xtask"]'), steps.split_tag.outputs.crate_name)
+        run: false
 
   build_binaries:
     needs: parse_tag
