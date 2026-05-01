@@ -55,7 +55,7 @@ pub fn test(root: &Path) -> Spawned {
 
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
 /// specified) optionally performing a release build (default is cargo's default profile).
-/// 
+///
 /// If getting the default host profile via rustc fails will fall back to x86_64-unknown-linux-gnu
 pub fn build(
     root: &Path,
@@ -63,7 +63,7 @@ pub fn build(
     glibc: &Option<String>,
     release: &bool,
 ) -> Spawned {
-    let BuildArgs{ builder, target } = BuildArgs::parse(target, glibc);
+    let BuildArgs { builder, target } = BuildArgs::parse(target, glibc);
     let release = if *release { Some("--release") } else { None };
     Command::new("cargo")
         .current_dir(root)
