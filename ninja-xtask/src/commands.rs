@@ -53,12 +53,10 @@ pub fn test(root: &Path) -> Spawned {
         .into_spawned("tests")
 }
 
-/// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `glibc` specified)
-/// optionally performing a release build (default is cargo's default profile)
-///
-/// #### Build target (TODO: take a specific target & other cargo args)
-/// - For a given `glibc`: `x86_64-unknown-linux-gnu`
-/// - Otherwise: cargo default target
+/// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
+/// specified) optionally performing a release build (default is cargo's default profile).
+/// 
+/// If getting the default host profile via rustc fails will fall back to x86_64-unknown-linux-gnu
 pub fn build(
     root: &Path,
     target: &Option<String>,
