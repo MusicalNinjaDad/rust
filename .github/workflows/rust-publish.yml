@@ -234,12 +234,8 @@ jobs:
           cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }}.exe ./${{ steps.set_output.outputs.subfolder }}
           7z a -tzip ${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
-      - name: upload_artifact
-        uses: actions/upload-release-asset@v1.0.2
+      - name: upload
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ needs.parse_tag.outputs.crate_name }}/${{ steps.set_output.outputs.archive }}
-          asset_name: ${{ steps.set_output.outputs.archive }}
-          asset_content_type: ${{ matrix.asset_content_type }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} './${{ needs.parse_tag.outputs.crate_name }}/${{ steps.set_output.outputs.archive }}'
