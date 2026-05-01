@@ -97,7 +97,11 @@ jobs:
       id: auth
     - name: Publish
       env:
-        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        # # Use IODC for updating existing crates
+        # CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+        # Use API Token ONLY for creating a new crate
+        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       run:
         cargo publish
 
