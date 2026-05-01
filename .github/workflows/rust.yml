@@ -38,7 +38,7 @@ jobs:
       - name: output crates as json array
         id: crates
         run: |
-          echo crates="['${{ env.CRATES }}']" >> $GITHUB_OUTPUT
+          echo crates="['$CRATES']" >> $GITHUB_OUTPUT
       - name: show crates
         run: |
           echo "crates: '${{ steps.crates.outputs.crates }}'"
