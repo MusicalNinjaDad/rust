@@ -12,11 +12,8 @@ on:
 
 env:
     CARGO_TERM_COLOR: always
-    # Comma separated list of crates to check: '"crate1","crate_2"'
-    CRATES: '"ninja-xtask","crate2"'
 
 jobs:
-
   skip_check:
     runs-on: ubuntu-latest
     outputs:
@@ -33,15 +30,13 @@ jobs:
     if: needs.skip_check.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     outputs:
-      crates: ${{ steps.crates.outputs.crates }}
+      matrix: ${{ steps.setup-matrix.outputs.matrix }}
     steps:
-      - name: output crates as json array
-        id: crates
-        run: |
-          echo crates="['$CRATES']" >> $GITHUB_OUTPUT
-      - name: show crates
-        run: |
-          echo "crates: '${{ steps.crates.outputs.crates }}'"
+      - id: setup-matrix
+        uses: druzsan/setup-matrix@e52eed47b195a3c2157f91e1baceaa82df2276f2 #v2
+        with:
+          matrix: |
+            crates: ["ninja-xtask", "crate2"]
 
   test:
     needs:
@@ -49,8 +44,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
-      matrix:
-        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
         working-directory: ${{ matrix.crate }}
@@ -66,8 +60,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
-      matrix:
-        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
         working-directory: ${{ matrix.crate }}
@@ -83,8 +76,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
-      matrix:
-        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
         working-directory: ${{ matrix.crate }}
@@ -100,8 +92,7 @@ jobs:
       - crates
     if: needs.skip_check.outputs.should_skip != 'true'
     strategy:
-      matrix:
-        crate: ${{ fromJson(needs.crates.outputs.crates) }}
+      matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     defaults:
       run:
         working-directory: ${{ matrix.crate }}
