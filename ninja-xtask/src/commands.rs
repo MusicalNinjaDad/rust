@@ -59,11 +59,16 @@ pub fn test(root: &Path) -> Spawned {
 /// #### Build target (TODO: take a specific target & other cargo args)
 /// - For a given `glibc`: `x86_64-unknown-linux-gnu`
 /// - Otherwise: cargo default target
-pub fn build(root: &Path, glibc: &Option<String>, release: &bool) -> Spawned {
+pub fn build(
+    root: &Path,
+    target: &Option<String>,
+    glibc: &Option<String>,
+    release: &bool,
+) -> Spawned {
     let (builder, target) = match glibc {
         Some(version) => {
-            let target = format!("x86_64-unknown-linux-gnu.{}", version);
-            ("zigbuild", vec!["--target".to_string(), target])
+            let full_target = format!("x86_64-unknown-linux-gnu.{}", version);
+            ("zigbuild", vec!["--target".to_string(), full_target])
         }
         None => ("build", vec![]),
     };
@@ -77,4 +82,43 @@ pub fn build(root: &Path, glibc: &Option<String>, release: &bool) -> Spawned {
         .stdout(Stdio::piped())
         .spawn()
         .into_spawned("build")
+}
+
+struct BuildArgs {
+    builder: &'static str,
+    target: Vec<String>,
+}
+
+impl BuildArgs {
+    fn parse(target: &Option<String>, glibc: &Option<String>) -> Self {
+        let (builder, target) = match glibc {
+            Some(version) => {
+                let full_target = format!("x86_64-unknown-linux-gnu.{}", version);
+                ("zigbuild", vec!["--target".to_string(), full_target])
+            }
+            None => ("build", vec![]),
+        };
+        Self { builder, target }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod generate_target {
+        use super::*;
+
+        const FLAG: &str = "--target";
+
+        #[test]
+        fn glibc() {
+            let expected_target: Vec<String> =
+                vec![FLAG.into(), "x86_64-unknown-linux-gnu.2.41".into()];
+            let generated = BuildArgs::parse(&None, &Some("2.41".into()));
+            let BuildArgs { builder, target } = generated;
+            assert_eq!(builder, "zigbuild");
+            assert_eq!(target, expected_target)
+        }
+    }
 }
