@@ -28,11 +28,13 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: update rust
+      working-directory: xtask
       run: rustup update
     - name: Set bootstrap
       run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV || true
     - name: Run tests
-      run: cd xtask && cargo "+${{ matrix.channel }}" test --no-fail-fast
+      working-directory: xtask
+      run: cargo "+${{ matrix.channel }}" test --no-fail-fast
 
   lint:
     strategy:
@@ -43,11 +45,13 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: update rust
+      working-directory: xtask
       run: rustup update && rustup component add --toolchain ${{ matrix.channel }} clippy
     - name: Set bootstrap
       run: test "${{ matrix.channel }}" != "nightly"  && echo "RUSTC_BOOTSTRAP=1" >> $GITHUB_ENV  || true
     - name: clippy
-      run: cd xtask && cargo +${{ matrix.channel }} clippy -- --deny warnings
+      working-directory: xtask
+      run: cargo +${{ matrix.channel }} clippy -- --deny warnings
 
   report:
     if: ${{ always() }}
