@@ -143,12 +143,6 @@ jobs:
             asset_content_type: application/gzip
             kind: linux
 
-          - target: x86_64-apple-darwin
-            os: macos-15-intel
-            archive_ext: tgz
-            asset_content_type: application/gzip
-            kind: macos
-
           - target: aarch64-apple-darwin
             os: macos-latest
             archive_ext: tgz
