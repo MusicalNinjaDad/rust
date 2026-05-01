@@ -132,26 +132,31 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: linux
 
           - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: linux
 
           - target: x86_64-apple-darwin
             os: macos-15-intel
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: macos
 
           - target: aarch64-apple-darwin
             os: macos-latest
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: macos
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             archive_ext: zip
+            asset_content_type: application/zip
             kind: windows
 
     runs-on: ${{ matrix.os }}
@@ -237,4 +242,4 @@ jobs:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./${{ needs.parse_tag.outputs.crate_name }}/${{ steps.set_output.outputs.archive }}
           asset_name: ${{ steps.set_output.outputs.archive }}
-          asset_content_type: application/gzip
+          asset_content_type: ${{ matrix.asset_content_type }}
