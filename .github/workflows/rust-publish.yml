@@ -131,33 +131,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
-            archive_ext: tgz
-            asset_content_type: application/gzip
-            kind: linux
-
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
-            archive_ext: tgz
-            asset_content_type: application/gzip
-            kind: linux
-
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            archive_ext: tgz
-            asset_content_type: application/gzip
-            kind: macos
-
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            archive_ext: zip
-            asset_content_type: application/zip
-            kind: windows
-
-    runs-on: ${{ matrix.os }}
+          - target: "x86_64-unknown-linux-gnu"
+            glibc: "-g 2.35" # Ubuntu 24.04 still on glibc2.35, behind even debian oldstable
+          - target: "x86_64-unknown-linux-musl"
+          - target: "aarch64-apple-darwin"
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout_tagged_commit
+      - name: checkout tagged commit
         uses: actions/checkout@v6
         with:
           ref: ${{ github.event.release.target_commitish }}
@@ -166,20 +146,21 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: toml-cli
+
       # Flaky - requires EXACTLY ONE [[bin]] section
-      - name: parse Cargo.toml
+      - name: set binary name
         id: cargo_toml
         run: |
           echo "bin=$(toml get -r Cargo.toml bin[0].name)" >> $GITHUB_OUTPUT
 
-      - name: set_output
+      - name: set output paths
         id: set_output
         shell: bash
         run: |
-          echo "archive=${{ needs.parse_tag.outputs.crate_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}.${{ matrix.archive_ext }}" >> $GITHUB_OUTPUT
+          echo "archive=${{ needs.parse_tag.outputs.crate_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}.tgz" >> $GITHUB_OUTPUT
           echo "subfolder=${{ needs.parse_tag.outputs.crate_name }}-${{ matrix.target }}-${{ needs.parse_tag.outputs.version }}" >> $GITHUB_OUTPUT
 
-      - name: show_outputs
+      - name: show calculated paths
         shell: bash
         run: |
           echo "Archive: '${{ steps.set_output.outputs.archive }}'"
@@ -190,56 +171,31 @@ jobs:
         shell: bash
         run: mkdir ${{ steps.set_output.outputs.subfolder }}
 
-      - name: copy_files_to_pkg_subfolder
-        shell: bash
-        run: |
-          cp LICENSE ${{ steps.set_output.outputs.subfolder }}
-          cp README.md ${{ steps.set_output.outputs.subfolder }}
-
       # Install manually as different crates may have custom toolchains defined
       - name: install rust
         run: rustup set profile default && rustup install --target ${{ matrix.target }}
 
-      - name: install musl-gcc
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        uses: awalsh128/cache-apt-pkgs-action@v1
-        with:
-          packages: musl-tools # provides musl-gcc
-          version: 1.0
+      - name: install zig for cross compilation
+        uses: https://codeberg.org/mlugg/setup-zig@v2
 
-      - name: build_${{ matrix.target }}_release_binary
-        shell: bash
-        run: cargo build --target=${{ matrix.target }} --release
-
-      - name: install cargo about
+      - name: install build tooling
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-about
+          tool: "cargo-zigbuild, ninja-xtask, cargo-about"
 
-      - name: generate_dep_licenses_file
-        shell: bash
-        run: cargo about generate --output-file "${{ steps.set_output.outputs.subfolder }}/third-party-licenses.html" about.hbs
+      - name: build ${{ matrix.target }} ${{ matrix.glibc }} --release
+        run: cargo ninja build --target=${{ matrix.target }} ${{ matrix.glibc }} --release
 
-      - name: pack_archive_macos
-        if: matrix.kind == 'macos'
-        shell: bash
+      - name: generate licenses file
+        run: cargo about generate --output-file third-party-licenses.html about.hbs
+
+      - name: create archive
         run: |
-          cp  ./target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }} ${{ steps.set_output.outputs.subfolder }}
-          gtar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
-
-      - name: pack_archive_linux
-        if: matrix.kind == 'linux'
-        shell: bash
-        run: |
+          cp LICENSE ${{ steps.set_output.outputs.subfolder }}
+          cp third-party-licenses.html ${{ steps.set_output.outputs.subfolder }}
+          cp README.md ${{ steps.set_output.outputs.subfolder }}
           cp target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }} ${{ steps.set_output.outputs.subfolder }}
           tar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
-
-      - name: pack_archive_windows
-        if: matrix.kind == 'windows'
-        shell: bash
-        run: |
-          cp target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }}.exe ./${{ steps.set_output.outputs.subfolder }}
-          7z a -tzip ${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: upload
         env:
