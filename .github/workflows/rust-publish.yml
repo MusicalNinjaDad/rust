@@ -197,9 +197,10 @@ jobs:
         shell: bash
         run: cargo build --target=${{ matrix.target }} --release
 
-      - name: install_cargo_about
-        shell: bash
-        run: cargo install --locked cargo-about
+      - name: install cargo about
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about
 
       - name: generate_dep_licenses_file
         shell: bash
