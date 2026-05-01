@@ -162,6 +162,16 @@ jobs:
         with:
           ref: ${{ github.event.release.target_commitish }}
 
+      - name: install toml-cli
+        uses: taiki-e/install-action@v2
+        with:
+          tool: toml-cli
+      # Flaky - requires EXACTLY ONE [[bin]] section
+      - name: parse Cargo.toml
+        id: cargo_toml
+        run: |
+          echo "bin=$(toml get -r Cargo.toml bin[0].name)" >> $GITHUB_OUTPUT
+
       - name: set_output
         id: set_output
         shell: bash
@@ -213,21 +223,21 @@ jobs:
         if: matrix.kind == 'macos'
         shell: bash
         run: |
-          cp  ./target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }} ${{ steps.set_output.outputs.subfolder }}
+          cp  ./target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }} ${{ steps.set_output.outputs.subfolder }}
           gtar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: pack_archive_linux
         if: matrix.kind == 'linux'
         shell: bash
         run: |
-          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }} ${{ steps.set_output.outputs.subfolder }}
+          cp target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }} ${{ steps.set_output.outputs.subfolder }}
           tar --create --gzip --file=${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: pack_archive_windows
         if: matrix.kind == 'windows'
         shell: bash
         run: |
-          cp target/${{ matrix.target }}/release/${{ needs.parse_tag.outputs.crate_name }}.exe ./${{ steps.set_output.outputs.subfolder }}
+          cp target/${{ matrix.target }}/release/${{ steps.cargo_toml.outputs.bin }}.exe ./${{ steps.set_output.outputs.subfolder }}
           7z a -tzip ${{ steps.set_output.outputs.archive }} ${{ steps.set_output.outputs.subfolder }}
 
       - name: upload
