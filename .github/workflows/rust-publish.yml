@@ -98,19 +98,21 @@ jobs:
     # Install manually as different crates my have custom toolchains defined
     - name: install rust
       run: rustup set profile default && rustup install
-    # # Use OIDC for updating existing crates
-    # - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
-    #   id: auth
-    # - name: Publish
-    #   env:
-    #     CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-    # # # OR # # #
-    # Use API Token ONLY for creating a new crate
+    # Use OIDC for updating existing crates
+    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
+      id: auth
     - name: Publish
       env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
       run:
         cargo publish
+    # # # OR # # #
+    # # Use API Token ONLY for creating a new crate
+    # - name: Publish
+    #   env:
+    #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+    #   run:
+    #     cargo publish
 
   # Based upon action used by cargo-msrv.
   # Maybe the file type is incorrect for windows?
@@ -130,26 +132,31 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: linux
 
           - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04 # Prevent building on the latest GLIBC. There's not really a need to, and Debian 12 users are still behind
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: linux
 
           - target: x86_64-apple-darwin
             os: macos-15-intel
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: macos
 
           - target: aarch64-apple-darwin
             os: macos-latest
             archive_ext: tgz
+            asset_content_type: application/gzip
             kind: macos
 
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             archive_ext: zip
+            asset_content_type: application/zip
             kind: windows
 
     runs-on: ${{ matrix.os }}
@@ -233,6 +240,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ steps.set_output.outputs.archive }}
+          asset_path: ./${{ needs.parse_tag.outputs.crate_name }}/${{ steps.set_output.outputs.archive }}
           asset_name: ${{ steps.set_output.outputs.archive }}
-          asset_content_type: application/gzip
+          asset_content_type: ${{ matrix.asset_content_type }}
