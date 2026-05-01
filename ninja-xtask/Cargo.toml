@@ -11,6 +11,10 @@ repository = "https://github.com/MusicalNinjaDad/rust"
 categories = ["development-tools::cargo-plugins"]
 license = "MIT"
 
+[[bin]]
+name = "cargo-ninja"
+path = "src/main.rs"
+
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/{ name }_v{ version }/{ name }-{ target }-v{ version }{ archive-suffix }"
 
