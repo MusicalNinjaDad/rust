@@ -87,6 +87,7 @@ WORKDIR /opt
             cargo-zigbuild \
             grcov \
             mdbook \
+            ninja-xtask \
     && cat <<EOF >> ${CARGO_HOME}/config.toml
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
