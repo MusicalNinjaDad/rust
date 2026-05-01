@@ -1,5 +1,4 @@
 use std::{
-    io,
     path::Path,
     process::{Command, Stdio},
 };
@@ -66,13 +65,7 @@ pub fn build(
     glibc: &Option<String>,
     release: &bool,
 ) -> Spawned {
-    let (builder, target) = match glibc {
-        Some(version) => {
-            let full_target = format!("x86_64-unknown-linux-gnu.{}", version);
-            ("zigbuild", vec!["--target".to_string(), full_target])
-        }
-        None => ("build", vec![]),
-    };
+    let BuildArgs{ builder, target } = BuildArgs::parse(target, glibc);
     let release = if *release { Some("--release") } else { None };
     Command::new("cargo")
         .current_dir(root)
