@@ -92,6 +92,7 @@ jobs:
   test_skip:
     needs:
       - test
+    if: ${{ !failure() }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "foo"
