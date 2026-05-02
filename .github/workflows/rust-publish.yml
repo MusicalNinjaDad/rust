@@ -79,41 +79,6 @@ jobs:
     - name: clippy
       run: cargo +${{ matrix.channel }} clippy -- --deny warnings
 
-  publish_lib:
-    needs:
-      - parse_tag
-      - test
-      - lint
-    environment: crates.io
-    permissions:
-      id-token: write
-    defaults:
-      run:
-        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        ref: ${{ github.event.release.target_commitish }}
-    # Install manually as different crates my have custom toolchains defined
-    - name: install rust
-      run: rustup set profile default && rustup install
-    # Use OIDC for updating existing crates
-    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
-      id: auth
-    - name: Publish
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-      run:
-        cargo publish
-    # # # OR # # #
-    # # Use API Token ONLY for creating a new crate
-    # - name: Publish
-    #   env:
-    #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-    #   run:
-    #     cargo publish
-
   # Based upon action used by cargo-msrv.
   # Maybe the file type is incorrect for windows?
   build_binaries:
@@ -207,3 +172,39 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload ${{ github.event.release.tag_name }} '${{ steps.set_output.outputs.archive }}'
+
+  publish_lib:
+    needs:
+      - parse_tag
+      - test
+      - lint
+      - build_binaries
+    environment: crates.io
+    permissions:
+      id-token: write
+    defaults:
+      run:
+        working-directory: ${{ needs.parse_tag.outputs.crate_name }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event.release.target_commitish }}
+    # Install manually as different crates my have custom toolchains defined
+    - name: install rust
+      run: rustup set profile default && rustup install
+    # Use OIDC for updating existing crates
+    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
+      id: auth
+    - name: Publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+      run:
+        cargo publish
+    # # # OR # # #
+    # # Use API Token ONLY for creating a new crate
+    # - name: Publish
+    #   env:
+    #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+    #   run:
+    #     cargo publish
