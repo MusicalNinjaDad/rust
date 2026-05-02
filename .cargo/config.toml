@@ -1,0 +1,4 @@
+[alias]
+x = "run --package ninja-xtask -- ninja"
+bld = "ninja build"
+stage = "ninja stage"
