@@ -22,7 +22,7 @@ pub fn get_var(key: &str) -> Result<String> {
 pub enum BuildError {
     VarNotSet(OsString),
     VarInvalid(OsString, OsString),
-    IOError(Box<std::io::Error>),
+    IOError(std::io::Error),
     Other(String),
 }
 
@@ -39,7 +39,7 @@ impl BuildError {
 
 impl From<std::io::Error> for BuildError {
     fn from(e: std::io::Error) -> Self {
-        BuildError::IOError(Box::new(e))
+        BuildError::IOError(e)
     }
 }
 
