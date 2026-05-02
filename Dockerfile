@@ -69,6 +69,7 @@ WORKDIR /opt
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
+    && rustup toolchain install stable beta nightly \
     && rustup component add \
             clippy \
             llvm-tools \
