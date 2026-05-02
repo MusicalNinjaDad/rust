@@ -1,5 +1,7 @@
 use std::{env::VarError, ffi::OsString};
 
+pub mod nightly;
+
 /// Result type wrapping [BuildError]. Returning this from `main` in a build script will
 /// provide useful information in the debug representation sent to stderr on failure.
 pub type Result<T> = std::result::Result<T, BuildError>;
