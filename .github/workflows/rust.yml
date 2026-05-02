@@ -89,14 +89,6 @@ jobs:
     - name: fmt
       run: cargo fmt --check
 
-  test_skip:
-    needs:
-      - test
-    if: ${{ !failure() }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "foo"
-
   # msrv:
   #   needs:
   #     - skip_check

@@ -179,6 +179,7 @@ jobs:
       - test
       - lint
       - build_binaries
+    if: ${{ !(failure() || cancelled()) }}
     environment: crates.io
     permissions:
       id-token: write
