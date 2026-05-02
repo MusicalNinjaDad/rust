@@ -4,6 +4,11 @@ FROM fedora:latest@sha256:498c452f32a739b61f0ef215bce9924ebc4866cbe44710f58157d7
 # Setup base system ...
 # ---
 
+# Define the default user
+ARG USERNAME=musicalninja
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
 # Enable man pages by commenting out the nodocs flag
 COPY <<EOF /etc/dnf/dnf.conf
 [main]
@@ -17,15 +22,11 @@ assumeyes=True
 # tsflags=nodocs
 EOF
 
-
-# Define the default user
-ARG USERNAME=musicalninja
-ARG USER_UID=1000
-ARG USER_GID=${USER_UID}
 # Rust goes in /opt with a dedicated rust group so we don't end up with system and user installs: this is a single user system.
 ENV RUSTUP_HOME=/opt/rustup \
     CARGO_HOME=/opt/cargo \
     PATH=/opt/cargo/bin:$PATH
+
 RUN \
 # add default user & allow sudo
   groupadd --gid ${USER_GID} ${USERNAME} \
@@ -44,7 +45,7 @@ RUN \
   && mkdir --mode=775 --parents $CARGO_HOME/bin \
   && chgrp rust $CARGO_HOME/bin \
 # ---
-# Install ...
+# Install system packages ...
 # ---
   && dnf update \
   # man pages for all the stuff which is already installed
@@ -65,12 +66,15 @@ RUN \
         mold \
         zig
 
+# ---
+# Install rust ...
+# ---
 USER root:rust
 WORKDIR /opt
+    # using ADD minimises layer sizes and improves caching as docker can check for changes
     ADD https://sh.rustup.rs rustup/rustup-init
     ADD --unpack=true https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz cargo/bin/
-    # umask g+rwx for remaining commands
-    # cargo-binstall still creates binstall.toml as 600, so need to change this manually to 664 at the end
+    # umask g+rwx
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
@@ -94,7 +98,9 @@ WORKDIR /opt
             grcov \
             mdbook \
             ninja-xtask \
+    # cargo-binstall creates binstall.toml as 600, ignoring umask
     && chmod 664 /opt/cargo/binstall.toml \
+    # use mold linker by default
     && cat <<EOF >> ${CARGO_HOME}/config.toml
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
