@@ -51,13 +51,17 @@ RUN dnf install \
         zig
         
 # Rust goes in /opt with a dedicated rust group so we don't end up with system and user installs: this is a single user system.
+# We run the whole rust install with user root:rust and umask 0002
+# Initial directories still need to be created with correct mode
+# rustup always creates cargo/bin as root:root 755 unless we pre-create it here
 ENV RUSTUP_HOME=/opt/rustup \
     CARGO_HOME=/opt/cargo \
     PATH=/opt/cargo/bin:$PATH
-
 RUN mkdir --mode=777 --parents $RUSTUP_HOME \
  && mkdir --mode=777 --parents $CARGO_HOME \
  && groupadd rust \
+ && mkdir --mode=775 --parents $CARGO_HOME/bin \
+ && chgrp rust $CARGO_HOME/bin \
  && usermod -a -G rust root \
  && usermod -a -G rust ${USERNAME}
 
