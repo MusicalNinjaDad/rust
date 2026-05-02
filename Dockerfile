@@ -70,6 +70,7 @@ WORKDIR /opt
     ADD https://sh.rustup.rs rustup/rustup-init
     ADD --unpack=true https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz cargo/bin/
     # umask g+rwx for remaining commands
+    # cargo-binstall still creates binstall.toml as 600, so need to change this manually to 664 at the end
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
@@ -93,6 +94,7 @@ WORKDIR /opt
             grcov \
             mdbook \
             ninja-xtask \
+    && chmod 664 /opt/cargo/binstall.toml \
     && cat <<EOF >> ${CARGO_HOME}/config.toml
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
