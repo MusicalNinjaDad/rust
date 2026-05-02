@@ -42,12 +42,11 @@ RUN \
   && mkdir --mode=777 --parents $CARGO_HOME \
   # rustup always creates cargo/bin as root:root 755 unless we pre-create it here
   && mkdir --mode=775 --parents $CARGO_HOME/bin \
-  && chgrp rust $CARGO_HOME/bin
-
+  && chgrp rust $CARGO_HOME/bin \
 # ---
 # Install ...
 # ---
-RUN dnf update \
+  && dnf update \
   # man pages for all the stuff which is already installed
   && dnf reinstall --skip-unavailable $(dnf list --installed | awk '{print $1}') \
   # man itself and basic manpages
@@ -60,7 +59,7 @@ RUN dnf update \
         bash-completion \
         git \
         which \
-    # foreign languages & linker used by rustc 
+  # foreign languages & linker used by rustc 
   && dnf install \
         clang \
         mold \
