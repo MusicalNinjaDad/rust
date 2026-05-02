@@ -49,3 +49,23 @@ impl From<String> for BuildError {
         BuildError::Other(msg)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn err_from_str() {
+        let err = BuildError::from("oops");
+        let msg = r#"Other("oops")"#;
+        assert!(format!("{err:?}").contains(msg));
+    }
+
+    #[test]
+    fn missing_env_var() {
+        let random_key = "019de8d0-bb66-769d-9d4d-fec48aebdd49";
+        let err = get_var(random_key);
+        assert!(err.is_err());
+        assert!(format!("{err:?}").contains(random_key));
+    }
+}
