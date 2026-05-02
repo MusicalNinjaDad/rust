@@ -30,7 +30,7 @@ jobs:
         with:
           matrix: |
             channel: ["stable", "beta", "nightly"]
-            crate: ["ninja-xtask"]
+            crate: ["ninja-xtask", "ninja-build"]
 
   test:
     needs: crates

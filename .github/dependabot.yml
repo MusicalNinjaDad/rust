@@ -3,6 +3,7 @@ updates:
 - package-ecosystem: "cargo"
   directories:
     - "ninja-xtask"
+    - "ninja-build"
   schedule:
     interval: "daily"
 - package-ecosystem: "docker"
