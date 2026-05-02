@@ -1,25 +1,7 @@
-# ninja-xtask
+# ninja-build
 
-These are the xtask commands that I got annoyed copying to every single rust repo of mine.
+A collection of things I regularly find I need in my build.rs including
 
-So I put them here and now I just cargo binstall them.
-
-You might find them useful. I hope you do.
-
-## Installation
-
-```sh
-cargo binstall ninja-xtask
-```
-
-Or to build from source / if you don't have binstall ...
-
-```sh
-cargo install ninja-xtask
-```
-
-## Usage
-
-```sh
-cargo ninja
-```
+- A Result/Error that gives meaningful output if used in `main() -> Result<()>`
+- Get an env var and provide a useful message if it does not exist
+- Handling the stabilisation lifecycle of experimental features when using nightly

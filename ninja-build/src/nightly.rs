@@ -1,3 +1,6 @@
+//! Extensions to the amazing [autocfg] designed to help with ergonomically and safely handling
+//! experimental features in nightly.
+
 use std::fmt::Display;
 
 use autocfg::AutoCfg;
