@@ -191,7 +191,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         ref: ${{ github.event.release.target_commitish }}
-    # Install manually as different crates my have custom toolchains defined
+    # Install manually as different crates may have custom toolchains defined
     - name: install rust
       run: rustup set profile default && rustup install
     # Use OIDC for updating existing crates
