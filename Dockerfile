@@ -80,6 +80,7 @@ WORKDIR /opt
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
+    # beta & nightly add 2Gb each to the image, but I use them a lot ...
     && rustup toolchain install stable beta nightly \
     && rustup component add \
             clippy \
