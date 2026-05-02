@@ -195,17 +195,17 @@ jobs:
     - name: install rust
       run: rustup set profile default && rustup install
     # Use OIDC for updating existing crates
-    - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
-      id: auth
-    - name: Publish
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-      run:
-        cargo publish
-    # # # OR # # #
-    # # Use API Token ONLY for creating a new crate
+    # - uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe #v1.0.4
+    #   id: auth
     # - name: Publish
     #   env:
-    #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+    #     CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
     #   run:
     #     cargo publish
+    # # # OR # # #
+    # Use API Token ONLY for creating a new crate
+    - name: Publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+      run:
+        cargo publish
