@@ -67,7 +67,7 @@ pub trait Nightly {
     /// #### In your build script:
     /// ```no_run
     /// use autocfg::AutoCfg;
-    /// use ninja_build::nightly::{AssertMatchesLocation, Nightly};
+    /// use ninja_build_rs::nightly::{AssertMatchesLocation, Nightly};
     ///
     /// let ac = autocfg::new();
     ///
