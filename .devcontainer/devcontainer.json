@@ -22,7 +22,8 @@
             ],
             "settings": {
                 "rust-analyzer.linkedProjects": [
-                    "ninja-xtask/Cargo.toml"
+                    "ninja-xtask/Cargo.toml",
+                    "ninja-build/Cargo.toml"
                 ],
                 // rust
                 "rust-analyzer.interpret.tests": true,
