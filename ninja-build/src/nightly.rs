@@ -52,12 +52,17 @@ pub trait Nightly {
     /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
     /// on 2026-04-10, leaving the macro in the new planned location.
     ///
-    /// If this value is `Some(location)` then you can guarantee that the `assert_matches!` macro
-    /// *is* available for use in the current configuration.
+    /// This will give you one of two config flags (never both)
+    /// - `assert_matches_in_root`
+    /// - `assert_matches_in_module`
     ///
-    /// ## Recommended usage
+    /// If you need a `has_assert_matches` flag you can construct it easily: If this value is
+    /// `Some(location)` then you can guarantee that the `assert_matches!` macro *is* available
+    /// for use in the current configuration.
+    ///
+    /// ### Recommended usage
+    /// #### In your build script:
     /// ```no_run
-    /// // Only valid in a build script
     /// use autocfg::AutoCfg;
     /// use ninja_build::nightly::{AssertMatchesLocation, Nightly};
     ///
@@ -67,6 +72,15 @@ pub trait Nightly {
     /// if let Some(location) = ac.assert_matches_location() {
     ///     autocfg::emit(&location.to_string())
     /// }
+    /// ```
+    ///
+    /// #### In the main code
+    /// ```
+    /// #[cfg(assert_matches_in_root)]
+    /// use std::assert_matches;
+    ///
+    /// #[cfg(assert_matches_in_module)]
+    /// use std::assert_matches::assert_matches;
     /// ```
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
