@@ -30,22 +30,21 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
 # ---
 # Install ...
 # ---
-
-# Man pages for all the stuff which is already installed, man itself and basic manpages
 RUN dnf update \
- && dnf reinstall --skip-unavailable $(dnf list --installed | awk '{print $1}') \
- && dnf install \
+  # man pages for all the stuff which is already installed
+  && dnf reinstall --skip-unavailable $(dnf list --installed | awk '{print $1}') \
+  # man itself and basic manpages
+  && dnf install \
         man \
         man-db \
-        man-pages
-
-# Basic development tools
-RUN dnf install \
+        man-pages \
+  # basic development tools
+  && dnf install \
         bash-completion \
         git \
-        which
-
-RUN dnf install \
+        which \
+    # foreign languages & linker used by rustc 
+  && dnf install \
         clang \
         mold \
         zig
