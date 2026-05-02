@@ -22,33 +22,33 @@ assumeyes=True
 # tsflags=nodocs
 EOF
 
-RUN \
 # add default user & allow sudo
-  groupadd --gid ${USER_GID} ${USERNAME} \
+RUN groupadd --gid ${USER_GID} ${USERNAME} \
   && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} \
   && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
-  && chmod 0440 /etc/sudoers.d/${USERNAME} \
+  && chmod 0440 /etc/sudoers.d/${USERNAME}
+
 # Install system packages ...
-  && dnf update \
+RUN dnf update \
   # man pages for all the stuff which is already installed
   && dnf reinstall --skip-unavailable $(dnf list --installed | awk '{print $1}') \
-  # man itself and basic manpages
-  && dnf install \
-        man \
-        man-db \
-        man-pages \
-  # basic development tools
+  # man itself, basic manpages, basic development tools
   && dnf install \
         bash-completion \
         git \
+        man \
+        man-db \
+        man-pages \
         which
+
 
 # ---
 # Install rust ...
+#   in /opt with a dedicated rust group
+#   so we don't end up with system and user installs
+#   this is a single user system.
 # ---
 
-# Rust goes in /opt with a dedicated rust group so we don't end up with system
-# and user installs: this is a single user system.
 ENV RUSTUP_HOME=/opt/rustup \
     CARGO_HOME=/opt/cargo \
     PATH=/opt/cargo/bin:$PATH
