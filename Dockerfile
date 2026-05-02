@@ -18,14 +18,31 @@ assumeyes=True
 EOF
 
 
-# Create the default user
+# Define the default user
 ARG USERNAME=musicalninja
 ARG USER_UID=1000
 ARG USER_GID=${USER_UID}
-RUN groupadd --gid ${USER_GID} ${USERNAME} \
- && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} \
- && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
- && chmod 0440 /etc/sudoers.d/${USERNAME}
+# Rust goes in /opt with a dedicated rust group so we don't end up with system and user installs: this is a single user system.
+ENV RUSTUP_HOME=/opt/rustup \
+    CARGO_HOME=/opt/cargo \
+    PATH=/opt/cargo/bin:$PATH
+RUN \
+# add default user & allow sudo
+  groupadd --gid ${USER_GID} ${USERNAME} \
+  && useradd --uid ${USER_UID} --gid ${USER_GID} -m ${USERNAME} \
+  && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
+  && chmod 0440 /etc/sudoers.d/${USERNAME} \
+# add rust group
+  && groupadd rust \
+  && usermod -a -G rust root \
+  && usermod -a -G rust ${USERNAME} \
+# We run the whole rust install with user root:rust and umask 0002 but ...
+  # Initial rust install directories still need to be created with correct mode
+  && mkdir --mode=777 --parents $RUSTUP_HOME \
+  && mkdir --mode=777 --parents $CARGO_HOME \
+  # rustup always creates cargo/bin as root:root 755 unless we pre-create it here
+  && mkdir --mode=775 --parents $CARGO_HOME/bin \
+  && chgrp rust $CARGO_HOME/bin
 
 # ---
 # Install ...
@@ -48,21 +65,6 @@ RUN dnf update \
         clang \
         mold \
         zig
-        
-# Rust goes in /opt with a dedicated rust group so we don't end up with system and user installs: this is a single user system.
-# We run the whole rust install with user root:rust and umask 0002
-# Initial directories still need to be created with correct mode
-# rustup always creates cargo/bin as root:root 755 unless we pre-create it here
-ENV RUSTUP_HOME=/opt/rustup \
-    CARGO_HOME=/opt/cargo \
-    PATH=/opt/cargo/bin:$PATH
-RUN mkdir --mode=777 --parents $RUSTUP_HOME \
- && mkdir --mode=777 --parents $CARGO_HOME \
- && groupadd rust \
- && mkdir --mode=775 --parents $CARGO_HOME/bin \
- && chgrp rust $CARGO_HOME/bin \
- && usermod -a -G rust root \
- && usermod -a -G rust ${USERNAME}
 
 USER root:rust
 WORKDIR /opt
