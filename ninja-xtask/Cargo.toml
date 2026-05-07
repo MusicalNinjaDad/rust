@@ -1,6 +1,6 @@
 [package]
 name = "ninja-xtask"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2024"
 readme = "README.md"
 description = "xtask utilities that I use in most projects"
