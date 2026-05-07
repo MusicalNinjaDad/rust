@@ -93,8 +93,12 @@ impl From<Cmd> for Exit<()> {
                     println!("{}: OK", cmd.name);
                     Self::Ok(())
                 } else {
+                    let stdout = String::from_utf8_lossy(&output.stdout);
                     let stderr = String::from_utf8_lossy(&output.stderr);
-                    Self::Error(stderr.to_string())
+                    Self::Error(format!(
+                        "====== {} exited with {} ======\n-- stdout: --\n{}\n\n-- stderr: --\n{}",
+                        cmd.name, output.status, stdout, stderr
+                    ))
                 }
             }
             Err(e) => {
