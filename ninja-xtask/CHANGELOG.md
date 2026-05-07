@@ -1,5 +1,9 @@
 # Changelog ninja-xtask
 
+## v0.2.6
+
+- show stdout and exit status for failed commands
+
 ## v0.2.4 & 0.2.5
 
 - fix build workflow for publishing binaries
