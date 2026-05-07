@@ -138,7 +138,10 @@ jobs:
 
       # Install manually as different crates may have custom toolchains defined
       - name: install rust
-        run: rustup set profile default && rustup install --target ${{ matrix.target }}
+        run: |
+          rustup set profile default
+          rustup install
+          rustup target add ${{ matrix.target }}
 
       - name: install zig for cross compilation
         uses: mlugg/setup-zig@v2
