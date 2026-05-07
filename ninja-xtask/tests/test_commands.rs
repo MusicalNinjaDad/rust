@@ -1,7 +1,10 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use dircpy::copy_dir;
-use ninja_xtask::commands::fmt;
+use ninja_xtask::{
+    Exit,
+    commands::{fmt, test},
+};
 use tempfile::tempdir;
 
 #[test]
@@ -22,4 +25,19 @@ fn fmt_fixture() {
     let formatted = fs::read_to_string(tmp.path().join("src/lib.rs")).unwrap();
     assert_ne!(original, formatted);
     dbg!(tmp.path());
+}
+
+#[test]
+fn fail_output() {
+    let fixture = PathBuf::from("tests/fixture");
+    let run_tests = test(&fixture);
+    let exit = Exit::from(run_tests);
+    let Exit::Error(output) = exit else {
+        panic!("test didn't fail")
+    };
+    assert!(output.contains("====== tests exited with"));
+    assert!(output.contains("test printed to stdout"));
+    assert!(output.contains("test dbg"));
+    assert!(output.contains("left: 5"));
+    println!("{output}");
 }
