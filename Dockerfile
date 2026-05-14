@@ -39,7 +39,8 @@ RUN dnf update \
         man \
         man-db \
         man-pages \
-        which
+        which \
+  && dnf clean all
 
 
 # ---
@@ -56,9 +57,10 @@ ENV RUSTUP_HOME=/opt/rustup \
 RUN \
 # add foreign languages & linker used by rustc 
   dnf install \
-      clang \
+      gcc \
       mold \
       zig \
+  && dnf clean all \
 # add rust group
   && groupadd rust \
   && usermod -a -G rust root \
