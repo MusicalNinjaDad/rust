@@ -542,9 +542,18 @@ dependencies = [
 
 [[package]]
 name = "try_v2"
-version = "0.4.2"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1a5b638e393440f6b73d652d0c078aeee1aee4b5f0b610aed9273f40bd5a4ae"
+checksum = "955391cc49a59b7c57d5452a4d8c12a5bc86a9afd4f9dbe4c7a9c87d793bfeba"
+dependencies = [
+ "try_v2_derive",
+]
+
+[[package]]
+name = "try_v2_derive"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "988880499403e7c7f2639c815d93a37007a2cf45df8124028027d79974e420b2"
 dependencies = [
  "autocfg",
  "proc-macro2",
