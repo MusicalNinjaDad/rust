@@ -33,6 +33,48 @@ impl AssertMatchesLocation {
     }
 }
 
+/// Known features have custom implementation
+#[allow(non_camel_case_types, reason = "shadowing feature naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnstableFeature {
+    proc_macro_diagnostic,
+    Other(&'static str),
+}
+
+impl From<&'static str> for UnstableFeature {
+    fn from(feature: &'static str) -> Self {
+        match feature {
+            "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
+            _ => Self::Other(feature),
+        }
+    }
+}
+
+impl UnstableFeature {
+    pub fn cfgs(&self) -> Vec<Cfg> {
+        match self {
+            UnstableFeature::proc_macro_diagnostic => todo!("proc_macro_diagnostic"),
+            UnstableFeature::Other(feature) => {
+                let cfg = format!("unstable_{feature}");
+                let code = format!(
+                    r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature({feature})]
+"#
+                );
+                vec![Cfg { cfg, code }]
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cfg {
+    cfg: String,
+    code: String,
+}
+
 pub trait Nightly {
     /// Identify whether a an experimental feature flag is available _and_ required on nightly.
     /// Always fails if feature flags are unavailable.
@@ -133,5 +175,28 @@ impl Nightly for AutoCfg {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn never_type() {
+        let feature = UnstableFeature::from("never_type");
+        assert_eq!(feature, UnstableFeature::Other("never_type"));
+        let unstable = r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature(never_type)]
+"#;
+        assert_eq!(
+            feature.cfgs(),
+            vec![Cfg {
+                cfg: "unstable_never_type".to_string(),
+                code: unstable.to_string()
+            }]
+        );
     }
 }
