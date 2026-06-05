@@ -160,6 +160,7 @@ fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str) {
 
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: &'static str) {
+        dbg!(&feature);
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
                 default_unstable_cfg(self, feature);
