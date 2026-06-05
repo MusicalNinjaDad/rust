@@ -59,7 +59,35 @@ impl UnstableFeature {
     pub fn cfgs(&self) -> Vec<Cfg> {
         match self {
             UnstableFeature::assert_matches => {
-                vec![Self::unstable("assert_matches")]
+                let mut cfgs = Vec::with_capacity(3);
+                cfgs.push(Self::unstable("assert_matches"));
+                let cfg = "assert_matches_in_root".to_string();
+                let code = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#
+                .to_string();
+                cfgs.push(Cfg { cfg, code });
+                let cfg = "assert_matches_in_module".to_string();
+                let code = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#
+                .to_string();
+                cfgs.push(Cfg { cfg, code });
+                cfgs
             }
             UnstableFeature::proc_macro_diagnostic => {
                 let cfg = "unstable_proc_macro_diagnostic".to_string();
@@ -171,6 +199,7 @@ impl Nightly for AutoCfg {
         #![feature(assert_matches)]
         use std::assert_matches;
 
+        #[allow(dead_code)]
         fn main() {
             assert_matches!(Some(4), Some(_));
         }
@@ -181,6 +210,7 @@ impl Nightly for AutoCfg {
         #![feature(assert_matches)]
         use std::assert_matches::assert_matches;
 
+        #[allow(dead_code)]
         fn main() {
             assert_matches!(Some(4), Some(_));
         }
@@ -244,6 +274,42 @@ extern crate proc_macro;
         let mut cfgs = feature.cfgs().into_iter();
         let unstable = cfgs.next().expect("unstable_assert_matches");
         assert_eq!(unstable.cfg, "unstable_assert_matches");
+        let in_root = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#;
+        assert_eq!(
+            cfgs.next(),
+            Some(Cfg {
+                cfg: "assert_matches_in_root".to_string(),
+                code: in_root.to_string()
+            })
+        );
+
+        let in_module = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#;
+        assert_eq!(
+            cfgs.next(),
+            Some(Cfg {
+                cfg: "assert_matches_in_module".to_string(),
+                code: in_module.to_string()
+            })
+        );
+
         assert_eq!(cfgs.next(), None);
     }
 }
