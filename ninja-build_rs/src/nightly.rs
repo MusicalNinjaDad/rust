@@ -53,7 +53,17 @@ impl From<&'static str> for UnstableFeature {
 impl UnstableFeature {
     pub fn cfgs(&self) -> Vec<Cfg> {
         match self {
-            UnstableFeature::proc_macro_diagnostic => todo!("proc_macro_diagnostic"),
+            UnstableFeature::proc_macro_diagnostic => {
+                let cfg = "unstable_proc_macro_diagnostic".to_string();
+                let code = r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature(proc_macro_diagnostic)]
+extern crate proc_macro;
+"#
+                .to_string();
+                vec![Cfg { cfg, code }]
+            }
             UnstableFeature::Other(feature) => {
                 let cfg = format!("unstable_{feature}");
                 let code = format!(
@@ -132,18 +142,11 @@ pub trait Nightly {
 
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: &'static str) {
-        let cfg = format!("unstable_{feature}");
-        // #![allow(unused)] is required to avoid this failing for `cargo clippy -- -D warnings`
-        let code = format!(
-            r#"
-        #![deny(stable_features)]
-        #![allow(unused)]
-        #![feature({feature})]
-        "#
-        );
-        autocfg::emit_possibility(&cfg);
-        if self.probe_raw(&code).is_ok() {
-            autocfg::emit(&cfg);
+        for Cfg { cfg, code } in UnstableFeature::from(feature).cfgs().iter() {
+            autocfg::emit_possibility(cfg);
+            if self.probe_raw(code).is_ok() {
+                autocfg::emit(cfg);
+            }
         }
     }
 
@@ -195,6 +198,25 @@ mod tests {
             feature.cfgs(),
             vec![Cfg {
                 cfg: "unstable_never_type".to_string(),
+                code: unstable.to_string()
+            }]
+        );
+    }
+
+    #[test]
+    fn proc_macro_diagnostic() {
+        let feature = UnstableFeature::from("proc_macro_diagnostic");
+        assert_eq!(feature, UnstableFeature::proc_macro_diagnostic);
+        let unstable = r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature(proc_macro_diagnostic)]
+extern crate proc_macro;
+"#;
+        assert_eq!(
+            feature.cfgs(),
+            vec![Cfg {
+                cfg: "unstable_proc_macro_diagnostic".to_string(),
                 code: unstable.to_string()
             }]
         );
