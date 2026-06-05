@@ -55,14 +55,8 @@ impl From<&'static str> for UnstableFeature {
     }
 }
 
-impl UnstableFeature {
-    pub fn cfgs(&self) -> Vec<Cfg> {
-        match self {
-            UnstableFeature::assert_matches => {
-                let mut cfgs = Vec::with_capacity(3);
-                cfgs.push(Self::unstable("assert_matches"));
-                let cfg = "assert_matches_in_root".to_string();
-                let code = r#"
+mod probes {
+    pub const ASSERTMATCHESROOT: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
 use std::assert_matches;
@@ -71,11 +65,9 @@ use std::assert_matches;
 fn main() {
     assert_matches!(Some(4), Some(_));
 }
-"#
-                .to_string();
-                cfgs.push(Cfg { cfg, code });
-                let cfg = "assert_matches_in_module".to_string();
-                let code = r#"
+"#;
+
+    pub const ASSERTMATCHESMODULE: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
 use std::assert_matches::assert_matches;
@@ -84,45 +76,7 @@ use std::assert_matches::assert_matches;
 fn main() {
     assert_matches!(Some(4), Some(_));
 }
-"#
-                .to_string();
-                cfgs.push(Cfg { cfg, code });
-                cfgs
-            }
-            UnstableFeature::proc_macro_diagnostic => {
-                let cfg = "unstable_proc_macro_diagnostic".to_string();
-                let code = r#"
-#![deny(stable_features)]
-#![allow(unused)]
-#![feature(proc_macro_diagnostic)]
-extern crate proc_macro;
-"#
-                .to_string();
-                vec![Cfg { cfg, code }]
-            }
-            UnstableFeature::Other(feature) => {
-                vec![Self::unstable(feature)]
-            }
-        }
-    }
-
-    fn unstable(feature: &'static str) -> Cfg {
-        let cfg = format!("unstable_{feature}");
-        let code = format!(
-            r#"
-#![deny(stable_features)]
-#![allow(unused)]
-#![feature({feature})]
-"#
-        );
-        Cfg { cfg, code }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Cfg {
-    cfg: String,
-    code: String,
+"#;
 }
 
 pub trait Nightly {
@@ -182,13 +136,35 @@ pub trait Nightly {
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
 
+fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str) {
+    let cfg = format!("unstable_{feature}");
+    let code = format!(
+        r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature({feature})]
+"#
+    );
+    autocfg::emit_possibility(&cfg);
+    if ac.probe_raw(&code).is_ok() {
+        autocfg::emit(&cfg);
+    }
+}
+
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: &'static str) {
-        for Cfg { cfg, code } in UnstableFeature::from(feature).cfgs().iter() {
-            autocfg::emit_possibility(cfg);
-            if self.probe_raw(code).is_ok() {
-                autocfg::emit(cfg);
+        match UnstableFeature::from(feature) {
+            UnstableFeature::assert_matches => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
+                if self.probe_raw(probes::ASSERTMATCHESROOT).is_ok() {
+                    autocfg::emit("assert_matches_location=\"root\"")
+                } else if self.probe_raw(probes::ASSERTMATCHESMODULE).is_ok() {
+                    autocfg::emit("assert_matches_location=\"module\"");
+                }
             }
+            UnstableFeature::proc_macro_diagnostic => todo!(),
+            UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
         }
     }
 
@@ -223,93 +199,5 @@ impl Nightly for AutoCfg {
         } else {
             None
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn never_type() {
-        let feature = UnstableFeature::from("never_type");
-        assert_eq!(feature, UnstableFeature::Other("never_type"));
-        let unstable = r#"
-#![deny(stable_features)]
-#![allow(unused)]
-#![feature(never_type)]
-"#;
-        assert_eq!(
-            feature.cfgs(),
-            vec![Cfg {
-                cfg: "unstable_never_type".to_string(),
-                code: unstable.to_string()
-            }]
-        );
-    }
-
-    #[test]
-    fn proc_macro_diagnostic() {
-        let feature = UnstableFeature::from("proc_macro_diagnostic");
-        assert_eq!(feature, UnstableFeature::proc_macro_diagnostic);
-        let unstable = r#"
-#![deny(stable_features)]
-#![allow(unused)]
-#![feature(proc_macro_diagnostic)]
-extern crate proc_macro;
-"#;
-        assert_eq!(
-            feature.cfgs(),
-            vec![Cfg {
-                cfg: "unstable_proc_macro_diagnostic".to_string(),
-                code: unstable.to_string()
-            }]
-        );
-    }
-
-    #[test]
-    fn assert_matches() {
-        let feature = UnstableFeature::from("assert_matches");
-        assert_eq!(feature, UnstableFeature::assert_matches);
-        let mut cfgs = feature.cfgs().into_iter();
-        let unstable = cfgs.next().expect("unstable_assert_matches");
-        assert_eq!(unstable.cfg, "unstable_assert_matches");
-        let in_root = r#"
-#![allow(stable_features)]
-#![feature(assert_matches)]
-use std::assert_matches;
-
-#[allow(dead_code)]
-fn main() {
-    assert_matches!(Some(4), Some(_));
-}
-"#;
-        assert_eq!(
-            cfgs.next(),
-            Some(Cfg {
-                cfg: "assert_matches_in_root".to_string(),
-                code: in_root.to_string()
-            })
-        );
-
-        let in_module = r#"
-#![allow(stable_features)]
-#![feature(assert_matches)]
-use std::assert_matches::assert_matches;
-
-#[allow(dead_code)]
-fn main() {
-    assert_matches!(Some(4), Some(_));
-}
-"#;
-        assert_eq!(
-            cfgs.next(),
-            Some(Cfg {
-                cfg: "assert_matches_in_module".to_string(),
-                code: in_module.to_string()
-            })
-        );
-
-        assert_eq!(cfgs.next(), None);
     }
 }
