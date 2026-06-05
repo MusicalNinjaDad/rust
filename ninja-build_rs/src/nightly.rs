@@ -236,4 +236,14 @@ extern crate proc_macro;
             }]
         );
     }
+
+    #[test]
+    fn assert_matches() {
+        let feature = UnstableFeature::from("assert_matches");
+        assert_eq!(feature, UnstableFeature::assert_matches);
+        let mut cfgs = feature.cfgs().into_iter();
+        let unstable = cfgs.next().expect("unstable_assert_matches");
+        assert_eq!(unstable.cfg, "unstable_assert_matches");
+        assert_eq!(cfgs.next(), None);
+    }
 }
