@@ -77,6 +77,13 @@ fn main() {
     assert_matches!(Some(4), Some(_));
 }
 "#;
+
+    pub const PROC_MACRO_DIAGNOSTIC: &str = r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature({feature})]
+extern crate proc_macro;
+"#;
 }
 
 pub trait Nightly {
@@ -163,7 +170,12 @@ impl Nightly for AutoCfg {
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
             }
-            UnstableFeature::proc_macro_diagnostic => todo!(),
+            UnstableFeature::proc_macro_diagnostic => {
+                autocfg::emit_possibility("unstable_proc_macro_diagnostic");
+                if self.probe_raw(probes::PROC_MACRO_DIAGNOSTIC).is_ok() {
+                    autocfg::emit("unstable_proc_macro_diagnostic");
+                }
+            }
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
         }
     }
