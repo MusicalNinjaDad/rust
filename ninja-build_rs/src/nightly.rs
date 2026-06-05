@@ -9,6 +9,7 @@ use autocfg::AutoCfg;
 /// on 2026-04-10, leaving the macro in the new planned location.
 ///
 /// See [AutoCfg::assert_matches_location] for more details
+#[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
 pub enum AssertMatchesLocation {
     /// Macro is at `std::assert_matches`
     Root,
@@ -16,6 +17,7 @@ pub enum AssertMatchesLocation {
     Module,
 }
 
+#[expect(deprecated)]
 impl Display for AssertMatchesLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -25,6 +27,7 @@ impl Display for AssertMatchesLocation {
     }
 }
 
+#[expect(deprecated)]
 impl AssertMatchesLocation {
     /// See [AutoCfg::assert_matches_location] for more details
     pub fn emit_possibilities() {
@@ -37,6 +40,7 @@ impl AssertMatchesLocation {
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnstableFeature {
+    assert_matches,
     proc_macro_diagnostic,
     Other(&'static str),
 }
@@ -44,6 +48,7 @@ pub enum UnstableFeature {
 impl From<&'static str> for UnstableFeature {
     fn from(feature: &'static str) -> Self {
         match feature {
+            "assert_matches" => Self::assert_matches,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             _ => Self::Other(feature),
         }
@@ -53,6 +58,9 @@ impl From<&'static str> for UnstableFeature {
 impl UnstableFeature {
     pub fn cfgs(&self) -> Vec<Cfg> {
         match self {
+            UnstableFeature::assert_matches => {
+                vec![Self::unstable("assert_matches")]
+            }
             UnstableFeature::proc_macro_diagnostic => {
                 let cfg = "unstable_proc_macro_diagnostic".to_string();
                 let code = r#"
@@ -65,17 +73,21 @@ extern crate proc_macro;
                 vec![Cfg { cfg, code }]
             }
             UnstableFeature::Other(feature) => {
-                let cfg = format!("unstable_{feature}");
-                let code = format!(
-                    r#"
+                vec![Self::unstable(feature)]
+            }
+        }
+    }
+
+    fn unstable(feature: &'static str) -> Cfg {
+        let cfg = format!("unstable_{feature}");
+        let code = format!(
+            r#"
 #![deny(stable_features)]
 #![allow(unused)]
 #![feature({feature})]
 "#
-                );
-                vec![Cfg { cfg, code }]
-            }
-        }
+        );
+        Cfg { cfg, code }
     }
 }
 
@@ -137,6 +149,8 @@ pub trait Nightly {
     /// #[cfg(assert_matches_in_module)]
     /// use std::assert_matches::assert_matches;
     /// ```
+    #[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
+    #[expect(deprecated)]
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
 
@@ -150,6 +164,7 @@ impl Nightly for AutoCfg {
         }
     }
 
+    #[expect(deprecated)]
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation> {
         let in_root = r#"
         #![allow(stable_features)]
