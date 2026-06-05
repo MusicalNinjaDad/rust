@@ -81,7 +81,7 @@ fn main() {
     pub const PROC_MACRO_DIAGNOSTIC: &str = r#"
 #![deny(stable_features)]
 #![allow(unused)]
-#![feature({feature})]
+#![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 "#;
 }
