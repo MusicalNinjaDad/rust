@@ -56,7 +56,8 @@ impl From<&'static str> for UnstableFeature {
 }
 
 mod probes {
-    pub const ASSERTMATCHESROOT: &str = r#"
+    pub mod assert_matches {
+        pub const ROOT: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
 use std::assert_matches;
@@ -67,7 +68,7 @@ fn main() {
 }
 "#;
 
-    pub const ASSERTMATCHESMODULE: &str = r#"
+        pub const MODULE: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
 use std::assert_matches::assert_matches;
@@ -77,13 +78,24 @@ fn main() {
     assert_matches!(Some(4), Some(_));
 }
 "#;
+    }
 
-    pub const PROC_MACRO_DIAGNOSTIC: &str = r#"
+    pub mod proc_macro_diagnostic {
+        pub const UNSTABLE: &str = r#"
 #![deny(stable_features)]
 #![allow(unused)]
 #![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 "#;
+
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(proc_macro_diagnostic)]
+extern crate proc_macro;
+use proc_macro::Diagnostic;      
+"#;
+    }
 }
 
 pub trait Nightly {
@@ -165,16 +177,26 @@ impl Nightly for AutoCfg {
             UnstableFeature::assert_matches => {
                 default_unstable_cfg(self, feature);
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
-                if self.probe_raw(probes::ASSERTMATCHESROOT).is_ok() {
+                if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
                     autocfg::emit("assert_matches_location=\"root\"")
-                } else if self.probe_raw(probes::ASSERTMATCHESMODULE).is_ok() {
+                } else if self.probe_raw(probes::assert_matches::MODULE).is_ok() {
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
             }
             UnstableFeature::proc_macro_diagnostic => {
                 autocfg::emit_possibility("unstable_proc_macro_diagnostic");
-                if self.probe_raw(probes::PROC_MACRO_DIAGNOSTIC).is_ok() {
+                if self
+                    .probe_raw(probes::proc_macro_diagnostic::UNSTABLE)
+                    .is_ok()
+                {
                     autocfg::emit("unstable_proc_macro_diagnostic");
+                }
+                autocfg::emit_possibility("has_proc_macro_diagnostic");
+                if self
+                    .probe_raw(probes::proc_macro_diagnostic::AVAILABLE)
+                    .is_ok()
+                {
+                    autocfg::emit("has_proc_macro_diagnostic");
                 }
             }
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
