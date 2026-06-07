@@ -43,6 +43,7 @@ pub enum UnstableFeature {
     assert_matches,
     never_type,
     proc_macro_diagnostic,
+    try_trait_v2,
     Other(&'static str),
 }
 
@@ -52,6 +53,7 @@ impl From<&'static str> for UnstableFeature {
             "assert_matches" => Self::assert_matches,
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
+            "try_trait_v2" => Self::try_trait_v2,
             _ => Self::Other(feature),
         }
     }
@@ -104,6 +106,15 @@ extern crate proc_macro;
 #![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 use proc_macro::Diagnostic;      
+"#;
+    }
+
+    pub mod try_trait_v2 {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(try_trait_v2)]
+use std::ops::Try;
 "#;
     }
 }
@@ -214,6 +225,13 @@ impl Nightly for AutoCfg {
                     .is_ok()
                 {
                     autocfg::emit("has_proc_macro_diagnostic");
+                }
+            }
+            UnstableFeature::try_trait_v2 => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_try_trait_v2");
+                if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
+                    autocfg::emit("has_try_trait_v2");
                 }
             }
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
