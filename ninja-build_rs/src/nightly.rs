@@ -63,6 +63,12 @@ impl From<&'static str> for UnstableFeature {
 
 mod probes {
     pub mod assert_matches {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches;
+"#;
+
         pub const ROOT: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
@@ -208,6 +214,10 @@ impl Nightly for AutoCfg {
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
                 default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_assert_matches");
+                if self.probe_raw(probes::assert_matches::AVAILABLE).is_ok() {
+                    autocfg::emit("has_assert_matches");
+                }
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
                 if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
                     autocfg::emit("assert_matches_location=\"root\"")
