@@ -124,7 +124,7 @@ use std::ops::Try;
         pub const AVAILABLE: &str = r#"
 #![allow(stable_features)]
 #![allow(unused)]
-#![feature(try_trait_v2)]
+#![feature(try_trait_v2_residual)]
 use std::ops::Residual;
 "#;
     }
@@ -248,7 +248,10 @@ impl Nightly for AutoCfg {
             UnstableFeature::try_trait_v2_residual => {
                 default_unstable_cfg(self, feature);
                 autocfg::emit_possibility("has_try_trait_v2_residual");
-                if self.probe_raw(probes::try_trait_v2_residual::AVAILABLE).is_ok() {
+                if self
+                    .probe_raw(probes::try_trait_v2_residual::AVAILABLE)
+                    .is_ok()
+                {
                     autocfg::emit("has_try_trait_v2_residual");
                 }
             }
