@@ -41,6 +41,7 @@ impl AssertMatchesLocation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnstableFeature {
     assert_matches,
+    never_type,
     proc_macro_diagnostic,
     Other(&'static str),
 }
@@ -49,6 +50,7 @@ impl From<&'static str> for UnstableFeature {
     fn from(feature: &'static str) -> Self {
         match feature {
             "assert_matches" => Self::assert_matches,
+            "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             _ => Self::Other(feature),
         }
@@ -80,6 +82,14 @@ fn main() {
 "#;
     }
 
+    pub mod never_type {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(never_type)]
+type Bang = !;
+"#;
+    }
     pub mod proc_macro_diagnostic {
         pub const UNSTABLE: &str = r#"
 #![deny(stable_features)]
@@ -181,6 +191,13 @@ impl Nightly for AutoCfg {
                     autocfg::emit("assert_matches_location=\"root\"")
                 } else if self.probe_raw(probes::assert_matches::MODULE).is_ok() {
                     autocfg::emit("assert_matches_location=\"module\"");
+                }
+            }
+            UnstableFeature::never_type => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_never_type");
+                if self.probe_raw(probes::never_type::AVAILABLE).is_ok() {
+                    autocfg::emit("has_never_type");
                 }
             }
             UnstableFeature::proc_macro_diagnostic => {
