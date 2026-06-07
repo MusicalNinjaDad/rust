@@ -44,6 +44,7 @@ pub enum UnstableFeature {
     never_type,
     proc_macro_diagnostic,
     try_trait_v2,
+    try_trait_v2_residual,
     Other(&'static str),
 }
 
@@ -54,6 +55,7 @@ impl From<&'static str> for UnstableFeature {
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
+            "try_trait_v2_residual" => Self::try_trait_v2_residual,
             _ => Self::Other(feature),
         }
     }
@@ -115,6 +117,15 @@ use proc_macro::Diagnostic;
 #![allow(unused)]
 #![feature(try_trait_v2)]
 use std::ops::Try;
+"#;
+    }
+
+    pub mod try_trait_v2_residual {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(try_trait_v2)]
+use std::ops::Residual;
 "#;
     }
 }
@@ -232,6 +243,13 @@ impl Nightly for AutoCfg {
                 autocfg::emit_possibility("has_try_trait_v2");
                 if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
                     autocfg::emit("has_try_trait_v2");
+                }
+            }
+            UnstableFeature::try_trait_v2_residual => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_try_trait_v2_residual");
+                if self.probe_raw(probes::try_trait_v2_residual::AVAILABLE).is_ok() {
+                    autocfg::emit("has_try_trait_v2_residual");
                 }
             }
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
