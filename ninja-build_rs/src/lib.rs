@@ -2,7 +2,7 @@
 //! - A Result/Error that gives meaningful output if used in `main() -> Result<()>`
 //! - Get an env var and provide a useful message if it does not exist
 //! - Handling the stabilisation lifecycle of experimental features when using nightly
-use std::{env::VarError, ffi::OsString};
+use std::{collections::HashSet, env::VarError, ffi::OsString};
 
 pub mod nightly;
 
@@ -17,6 +17,15 @@ pub type Result<T> = std::result::Result<T, BuildError>;
 pub fn get_var(key: &str) -> Result<String> {
     println!("cargo::rerun-if-env-changed={key}");
     std::env::var(key).map_err(|err| BuildError::from_var_error(key, err))
+}
+/// Attempt to get an environment variable and split the values using the OS path separator.
+///
+/// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
+/// - If not found the error returned will include the key name in the debug representation.
+pub fn split_var(key: &str) -> Result<HashSet<String>> {
+    Ok(std::env::split_paths(&get_var(key)?)
+        .map(|p| p.to_string_lossy().to_string())
+        .collect())
 }
 
 #[derive(Debug)]
