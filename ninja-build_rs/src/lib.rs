@@ -10,9 +10,12 @@ pub mod nightly;
 /// provide useful information in the debug representation sent to stderr on failure.
 pub type Result<T> = std::result::Result<T, BuildError>;
 
-/// Attempt to get an environment variable. If not found the error returned will include the
-/// key name in the debug representation.
+/// Attempt to get an environment variable.
+///
+/// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
+/// - If not found the error returned will include the key name in the debug representation.
 pub fn get_var(key: &str) -> Result<String> {
+    println!("cargo::rerun-if-env-changed={key}");
     std::env::var(key).map_err(|err| BuildError::from_var_error(key, err))
 }
 
