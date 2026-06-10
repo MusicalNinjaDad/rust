@@ -12,4 +12,4 @@ categories = ["development-tools::build-utils"]
 license = "MIT"
 
 [dependencies]
-autocfg = "1.5.0"
+autocfg = "1.5.1"
