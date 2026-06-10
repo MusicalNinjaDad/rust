@@ -9,6 +9,7 @@ use autocfg::AutoCfg;
 /// on 2026-04-10, leaving the macro in the new planned location.
 ///
 /// See [AutoCfg::assert_matches_location] for more details
+#[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
 pub enum AssertMatchesLocation {
     /// Macro is at `std::assert_matches`
     Root,
@@ -16,6 +17,7 @@ pub enum AssertMatchesLocation {
     Module,
 }
 
+#[expect(deprecated)]
 impl Display for AssertMatchesLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -25,11 +27,112 @@ impl Display for AssertMatchesLocation {
     }
 }
 
+#[expect(deprecated)]
 impl AssertMatchesLocation {
     /// See [AutoCfg::assert_matches_location] for more details
     pub fn emit_possibilities() {
         autocfg::emit_possibility(&AssertMatchesLocation::Root.to_string());
         autocfg::emit_possibility(&AssertMatchesLocation::Module.to_string());
+    }
+}
+
+/// Known features have custom implementation
+#[allow(non_camel_case_types, reason = "shadowing feature naming")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnstableFeature {
+    assert_matches,
+    never_type,
+    proc_macro_diagnostic,
+    try_trait_v2,
+    try_trait_v2_residual,
+    Other(&'static str),
+}
+
+impl From<&'static str> for UnstableFeature {
+    fn from(feature: &'static str) -> Self {
+        match feature {
+            "assert_matches" => Self::assert_matches,
+            "never_type" => Self::never_type,
+            "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
+            "try_trait_v2" => Self::try_trait_v2,
+            "try_trait_v2_residual" => Self::try_trait_v2_residual,
+            _ => Self::Other(feature),
+        }
+    }
+}
+
+mod probes {
+    pub mod assert_matches {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches;
+"#;
+
+        pub const ROOT: &str = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#;
+
+        pub const MODULE: &str = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+use std::assert_matches::assert_matches;
+
+#[allow(dead_code)]
+fn main() {
+    assert_matches!(Some(4), Some(_));
+}
+"#;
+    }
+
+    pub mod never_type {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(never_type)]
+type Bang = !;
+"#;
+    }
+    pub mod proc_macro_diagnostic {
+        pub const UNSTABLE: &str = r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature(proc_macro_diagnostic)]
+extern crate proc_macro;
+"#;
+
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(proc_macro_diagnostic)]
+extern crate proc_macro;
+use proc_macro::Diagnostic;      
+"#;
+    }
+
+    pub mod try_trait_v2 {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(try_trait_v2)]
+use std::ops::Try;
+"#;
+    }
+
+    pub mod try_trait_v2_residual {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(try_trait_v2_residual)]
+use std::ops::Residual;
+"#;
     }
 }
 
@@ -85,32 +188,95 @@ pub trait Nightly {
     /// #[cfg(assert_matches_in_module)]
     /// use std::assert_matches::assert_matches;
     /// ```
+    #[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
+    #[expect(deprecated)]
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
+}
+
+fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str) {
+    let cfg = format!("unstable_{feature}");
+    let code = format!(
+        r#"
+#![deny(stable_features)]
+#![allow(unused)]
+#![feature({feature})]
+"#
+    );
+    autocfg::emit_possibility(&cfg);
+    if ac.probe_raw(&code).is_ok() {
+        autocfg::emit(&cfg);
+    }
 }
 
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: &'static str) {
-        let cfg = format!("unstable_{feature}");
-        // #![allow(unused)] is required to avoid this failing for `cargo clippy -- -D warnings`
-        let code = format!(
-            r#"
-        #![deny(stable_features)]
-        #![allow(unused)]
-        #![feature({feature})]
-        "#
-        );
-        autocfg::emit_possibility(&cfg);
-        if self.probe_raw(&code).is_ok() {
-            autocfg::emit(&cfg);
+        dbg!(&feature);
+        match UnstableFeature::from(feature) {
+            UnstableFeature::assert_matches => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_assert_matches");
+                if self.probe_raw(probes::assert_matches::AVAILABLE).is_ok() {
+                    autocfg::emit("has_assert_matches");
+                }
+                autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
+                if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
+                    autocfg::emit("assert_matches_location=\"root\"")
+                } else if self.probe_raw(probes::assert_matches::MODULE).is_ok() {
+                    autocfg::emit("assert_matches_location=\"module\"");
+                }
+            }
+            UnstableFeature::never_type => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_never_type");
+                if self.probe_raw(probes::never_type::AVAILABLE).is_ok() {
+                    autocfg::emit("has_never_type");
+                }
+            }
+            UnstableFeature::proc_macro_diagnostic => {
+                autocfg::emit_possibility("unstable_proc_macro_diagnostic");
+                if self
+                    .probe_raw(probes::proc_macro_diagnostic::UNSTABLE)
+                    .is_ok()
+                {
+                    autocfg::emit("unstable_proc_macro_diagnostic");
+                }
+                autocfg::emit_possibility("has_proc_macro_diagnostic");
+                if self
+                    .probe_raw(probes::proc_macro_diagnostic::AVAILABLE)
+                    .is_ok()
+                {
+                    autocfg::emit("has_proc_macro_diagnostic");
+                }
+            }
+            UnstableFeature::try_trait_v2 => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_try_trait_v2");
+                if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
+                    autocfg::emit("has_try_trait_v2");
+                }
+            }
+            UnstableFeature::try_trait_v2_residual => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_try_trait_v2_residual");
+                if self
+                    .probe_raw(probes::try_trait_v2_residual::AVAILABLE)
+                    .is_ok()
+                {
+                    autocfg::emit("has_try_trait_v2_residual");
+                }
+            }
+            UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
         }
     }
 
+    #[expect(deprecated)]
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation> {
         let in_root = r#"
         #![allow(stable_features)]
         #![feature(assert_matches)]
         use std::assert_matches;
 
+        #[allow(dead_code)]
         fn main() {
             assert_matches!(Some(4), Some(_));
         }
@@ -121,6 +287,7 @@ impl Nightly for AutoCfg {
         #![feature(assert_matches)]
         use std::assert_matches::assert_matches;
 
+        #[allow(dead_code)]
         fn main() {
             assert_matches!(Some(4), Some(_));
         }
