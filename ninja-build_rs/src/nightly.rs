@@ -99,7 +99,8 @@ fn main() {
 #![allow(unused)]
 #![feature(iterator_try_collect)]
 fn try_collect() {
-    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
+    let mut i = [Some(1)].into_iter();
+    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut i);
 }
 "#;
     }
@@ -329,6 +330,7 @@ mod tests {
 
     #[test]
     fn try_collect() {
-        let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
+        let mut i = [Some(1)].into_iter();
+        let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut i);
     }
 }
