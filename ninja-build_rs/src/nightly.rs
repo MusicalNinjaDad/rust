@@ -238,6 +238,7 @@ impl Nightly for AutoCfg {
             }
             UnstableFeature::iterator_try_collect => {
                 default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_iterator_try_collect");
                 if self
                     .probe_raw(probes::iterator_try_collect::AVAILABLE)
                     .is_ok()
