@@ -1,3 +1,5 @@
+#![cfg_attr(test, feature(iterator_try_collect))]
+
 //! A collection of things I regularly find I need in my build.rs including
 //! - A Result/Error that gives meaningful output if used in `main() -> Result<()>`
 //! - Get an env var and provide a useful message if it does not exist

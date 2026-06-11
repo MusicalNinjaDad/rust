@@ -43,6 +43,7 @@ pub enum UnstableFeature {
     assert_matches,
     never_type,
     proc_macro_diagnostic,
+    try_collect,
     try_trait_v2,
     try_trait_v2_residual,
     Other(&'static str),
@@ -54,6 +55,7 @@ impl From<&'static str> for UnstableFeature {
             "assert_matches" => Self::assert_matches,
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
+            "try_collect" => Self::try_collect,
             "try_trait_v2" => Self::try_trait_v2,
             "try_trait_v2_residual" => Self::try_trait_v2_residual,
             _ => Self::Other(feature),
@@ -117,6 +119,16 @@ use proc_macro::Diagnostic;
 "#;
     }
 
+    pub mod try_collect {
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(iterator_try_collect)]
+fn try_collect() {
+    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
+}
+"#;
+    }
     pub mod try_trait_v2 {
         pub const AVAILABLE: &str = r#"
 #![allow(stable_features)]
@@ -248,6 +260,12 @@ impl Nightly for AutoCfg {
                     autocfg::emit("has_proc_macro_diagnostic");
                 }
             }
+            UnstableFeature::try_collect => {
+                default_unstable_cfg(self, feature);
+                if self.probe_raw(probes::try_collect::AVAILABLE).is_ok() {
+                    autocfg::emit("has_try_collect");
+                }
+            }
             UnstableFeature::try_trait_v2 => {
                 default_unstable_cfg(self, feature);
                 autocfg::emit_possibility("has_try_trait_v2");
@@ -300,5 +318,14 @@ impl Nightly for AutoCfg {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn try_collect() {
+        let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
     }
 }
