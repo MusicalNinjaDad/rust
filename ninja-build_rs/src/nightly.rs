@@ -41,6 +41,7 @@ impl AssertMatchesLocation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnstableFeature {
     assert_matches,
+    iterator_try_collect,
     never_type,
     proc_macro_diagnostic,
     try_trait_v2,
@@ -52,6 +53,7 @@ impl From<&'static str> for UnstableFeature {
     fn from(feature: &'static str) -> Self {
         match feature {
             "assert_matches" => Self::assert_matches,
+            "iterator_try_collect" => Self::iterator_try_collect,
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
@@ -91,7 +93,17 @@ fn main() {
 }
 "#;
     }
-
+    pub mod iterator_try_collect {
+        // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
+        pub const AVAILABLE: &str = r#"
+#![allow(stable_features)]
+#![allow(unused)]
+#![feature(iterator_try_collect)]
+fn try_collect() {
+    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut vec![Some(1)].into_iter());
+}
+"#;
+    }
     pub mod never_type {
         pub const AVAILABLE: &str = r#"
 #![allow(stable_features)]
@@ -223,6 +235,16 @@ impl Nightly for AutoCfg {
                     autocfg::emit("assert_matches_location=\"root\"")
                 } else if self.probe_raw(probes::assert_matches::MODULE).is_ok() {
                     autocfg::emit("assert_matches_location=\"module\"");
+                }
+            }
+            UnstableFeature::iterator_try_collect => {
+                default_unstable_cfg(self, feature);
+                autocfg::emit_possibility("has_iterator_try_collect");
+                if self
+                    .probe_raw(probes::iterator_try_collect::AVAILABLE)
+                    .is_ok()
+                {
+                    autocfg::emit("has_iterator_try_collect");
                 }
             }
             UnstableFeature::never_type => {
