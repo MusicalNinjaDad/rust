@@ -94,12 +94,13 @@ fn main() {
 "#;
     }
     pub mod iterator_try_collect {
+        // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
         pub const AVAILABLE: &str = r#"
 #![allow(stable_features)]
 #![allow(unused)]
 #![feature(iterator_try_collect)]
 fn try_collect() {
-    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
+    let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut vec![Some(1)].into_iter());
 }
 "#;
     }
