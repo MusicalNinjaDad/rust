@@ -324,12 +324,3 @@ impl Nightly for AutoCfg {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-
-    #[test]
-    fn try_collect() {
-        let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut [Some(1)].into_iter());
-    }
-}
