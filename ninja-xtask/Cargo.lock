@@ -230,10 +230,10 @@ dependencies = [
  "autocfg",
  "ninja-build_rs",
  "proc-macro2",
- "proc_macro2_diagnostic 0.6.3",
+ "proc_macro2_diagnostic",
  "quote",
  "syn",
- "try_v2 0.8.0",
+ "try_v2",
 ]
 
 [[package]]
@@ -371,7 +371,7 @@ dependencies = [
  "dircpy",
  "exit_safely",
  "tempfile",
- "try_v2 0.7.1",
+ "try_v2",
 ]
 
 [[package]]
@@ -403,17 +403,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proc_macro2_diagnostic"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4fd9fee8fad608b70b17f47dbe4429dfbad9d62c1958a8fc7ea5435c562ffeb"
-dependencies = [
- "autocfg",
- "proc-macro2",
- "syn",
 ]
 
 [[package]]
@@ -566,36 +555,14 @@ dependencies = [
 
 [[package]]
 name = "try_v2"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de5c1f7a7c4ef20c2df963ef0c0db4a05187e30322851fab7c4eca1aca6098df"
-dependencies = [
- "try_v2_derive 0.7.1",
-]
-
-[[package]]
-name = "try_v2"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1a05eef73101f49e79baf42594072dcd5816793faf90cb93981350cb69d0a6d"
 dependencies = [
  "autocfg",
  "ninja-build_rs",
- "try_v2_derive 0.8.0",
+ "try_v2_derive",
  "try_v2_traits",
-]
-
-[[package]]
-name = "try_v2_derive"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70d19eef9a08d3677aa52593d451976f6f68cf4d3a8b7114a59f4649a0c2cb58"
-dependencies = [
- "autocfg",
- "proc-macro2",
- "proc_macro2_diagnostic 0.3.1",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -607,7 +574,7 @@ dependencies = [
  "autocfg",
  "ninja-build_rs",
  "proc-macro2",
- "proc_macro2_diagnostic 0.6.3",
+ "proc_macro2_diagnostic",
  "quote",
  "syn",
 ]
