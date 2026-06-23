@@ -555,9 +555,9 @@ dependencies = [
 
 [[package]]
 name = "try_v2"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1a05eef73101f49e79baf42594072dcd5816793faf90cb93981350cb69d0a6d"
+checksum = "136601fbf03c5fe5d590e9e64d8a5c7f679a28769b8118f96d0b5bf891e47684"
 dependencies = [
  "autocfg",
  "ninja-build_rs",
@@ -567,9 +567,9 @@ dependencies = [
 
 [[package]]
 name = "try_v2_derive"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac7636206d2db657e6d38bf3357fa34f84eb97546d34e7b42ddbdf0d36453092"
+checksum = "4f50fa13bcb0ebe872232abba38f9cf7099f2d237a561294a0b7c142aea2d12f"
 dependencies = [
  "autocfg",
  "ninja-build_rs",
@@ -581,9 +581,9 @@ dependencies = [
 
 [[package]]
 name = "try_v2_traits"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "556798c54d3b037c8c015aedd5e2fa91b4c7a02f9b9cdf4ad4984379303ddda1"
+checksum = "8a6fc6f36a61b586a01614f5ebc331f39a2b7aa02bfc17a8296e65e86688066d"
 dependencies = [
  "autocfg",
  "ninja-build_rs",
