@@ -191,8 +191,8 @@ impl Nightly for AutoCfg {
                     .is_ok()
                 {
                     autocfg::emit("assert_matches_location=\"root\"")
-                } else if !allowed & self.probe_raw(probes::assert_matches::MODULE).is_ok() {
-                    //    ^^^^^^^^ assert_matches was stabilised in root
+                } else if allowed & self.probe_raw(probes::assert_matches::MODULE).is_ok() {
+                    //    ^^^^^^^ assert_matches was stabilised in root
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
             }
