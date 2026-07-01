@@ -1,7 +1,11 @@
 //! Extensions to the amazing [autocfg] designed to help with ergonomically and safely handling
 //! experimental features in nightly.
 
-use std::{fmt::Display, path::Path, process::Command};
+use std::{
+    fmt::Display,
+    path::Path,
+    process::{Command, Output},
+};
 
 use autocfg::AutoCfg;
 
@@ -335,46 +339,41 @@ pub fn cargo_unstable() -> Result<bool> {
         .success())
 }
 
+fn cargo_config<P: AsRef<Path>>(
+    current_dir: &Option<P>,
+    added_unstable_options: bool,
+) -> Result<Output> {
+    let mut cargo = Command::new(get_var("CARGO")?);
+    if let Some(dir) = &current_dir {
+        cargo.current_dir(dir);
+    }
+    cargo.arg("-Zunstable-options");
+    if added_unstable_options {
+        cargo.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
+    }
+    cargo.args(["config", "get"]);
+    cargo
+        .output()
+        .map_err(|err| BuildError::Other(err.to_string()))
+}
+
 /// Return the comma-separated list of `unstable.allow-features` from cargo config
 ///
 /// ## Note
 /// - pass `None` to use current working directory (you probably always want to do this!)
 pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
+        // cargo won't accept `-Z` - so we're on a not-unstable toolchain
         return Ok(AllowedFeatures::None);
     }
 
-    let mut cargo = Command::new(get_var("CARGO")?);
-    if let Some(dir) = &current_dir {
-        dbg!(&dir.as_ref());
-        cargo.current_dir(dir);
-    }
-    cargo.args(["-Zunstable-options", "config", "get"]);
-    let mut output = cargo
-        .output()
-        .map_err(|err| BuildError::Other(err.to_string()))?;
     let mut added_unstable_options = false;
+    let mut output = cargo_config(&current_dir, added_unstable_options)?;
 
     if !output.status.success() {
         // Maybe there is a restricted list which doesn't include unstable-options
         added_unstable_options = true;
-
-        let mut cargo = Command::new(get_var("CARGO")?);
-        if let Some(dir) = &current_dir {
-            dbg!(&dir.as_ref());
-            cargo.current_dir(dir);
-        }
-        cargo.args([
-            "-Zunstable-options",
-            "--config",
-            "unstable.allow-features=[\"unstable-options\"]",
-            "config",
-            "get",
-            "unstable.allow-features",
-        ]);
-        output = cargo
-            .output()
-            .map_err(|err| BuildError::Other(err.to_string()))?;
+        output = cargo_config(&current_dir, added_unstable_options)?;
 
         if !output.status.success() {
             // Nope something else went wrong!
@@ -391,6 +390,7 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
     {
+        None => AllowedFeatures::All,
         Some(features) => {
             let features: Vec<_> = features
                 .strip_prefix("unstable.allow-features = [")
@@ -418,7 +418,6 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
                 AllowedFeatures::Some(features)
             }
         }
-        None => AllowedFeatures::All,
     };
     Ok(allowed)
 }
