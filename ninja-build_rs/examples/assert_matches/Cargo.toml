@@ -1,0 +1,9 @@
+[package]
+name = "ninja-build_rs-assert_matches_fixture"
+version = "0.0.0"
+publish = false
+
+[lib]
+
+[build-dependencies]
+ninja-build_rs.path = "../.."
