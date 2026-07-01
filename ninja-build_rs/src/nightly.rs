@@ -346,7 +346,10 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
         "get",
         "unstable.allow-features",
     ]);
-    let stdout = cargo.output().expect("output").stdout;
+    let stdout = cargo
+        .output()
+        .map_err(|err| BuildError::Other(err.to_string()))?
+        .stdout;
     let allowed = String::from_utf8_lossy(&stdout);
     Ok(allowed
         .strip_prefix("unstable.allow-features = [")
