@@ -87,14 +87,21 @@ mod probes {
     }
 
     pub mod assert_matches {
-        pub fn available(allowed: bool) {
-            autocfg::emit_possibility("has_assert_matches");
-        }
-        pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
-#![feature(assert_matches)]
+        use super::{super::AutoCfg, make_probe};
+
+        const FEATURE: &str = "assert_matches";
+
+        pub fn available(allowed: bool, ac: &AutoCfg) {
+            let cfg = "has_assert_matches";
+            autocfg::emit_possibility(cfg);
+            let probe = r#"
 use std::assert_matches;
 "#;
+            let code = make_probe(allowed, FEATURE, probe);
+            if ac.probe_raw(&code).is_ok() {
+                autocfg::emit(cfg);
+            }
+        }
 
         pub const ROOT: &str = r#"
 #![allow(stable_features)]
@@ -254,11 +261,9 @@ impl Nightly for AutoCfg {
         dbg!(&feature);
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
+                let allowed = allowed_features.includes("assert_matches");
                 default_unstable_cfg(self, feature, allowed_features);
-                autocfg::emit_possibility("has_assert_matches");
-                if self.probe_raw(probes::assert_matches::AVAILABLE).is_ok() {
-                    autocfg::emit("has_assert_matches");
-                }
+                probes::assert_matches::available(allowed, self);
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
                 if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
                     autocfg::emit("assert_matches_location=\"root\"")
