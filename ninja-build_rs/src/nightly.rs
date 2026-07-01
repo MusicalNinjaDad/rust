@@ -278,7 +278,7 @@ fn cargo_config<P: AsRef<Path>>(
 ///
 /// This works fine on any channel and respects whitelists (`unstable.allowed-features`) in all
 /// relevant cargo config.toml files.
-/// 
+///
 /// ## Note
 /// - This will not respect additional entries passed at the command line via
 ///   `cargo --config unstable.allow-features=[...]`
