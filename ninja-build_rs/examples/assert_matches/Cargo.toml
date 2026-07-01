@@ -1,0 +1,11 @@
+[package]
+name = "ninja-build_rs-assert_matches_fixture"
+edition = "2024"
+version = "0.0.0"
+publish = false
+
+[lib]
+
+[build-dependencies]
+autocfg = "1.5.1"
+ninja-build_rs.path = "../.."
