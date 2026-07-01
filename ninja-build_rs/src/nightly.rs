@@ -70,7 +70,26 @@ impl From<&'static str> for UnstableFeature {
 }
 
 mod probes {
+    pub fn make_probe(allowed: bool, feature: &str, probe: &str) -> String {
+        let mut _probe = String::with_capacity(256);
+        if allowed {
+            _probe.push('\n');
+            _probe.push_str("#![allow(stable_features)]");
+            _probe.push('\n');
+
+            _probe.push_str("#![feature(");
+            _probe.push_str(feature);
+            _probe.push_str(")]");
+            _probe.push('\n');
+        };
+        _probe.push_str(probe);
+        _probe
+    }
+
     pub mod assert_matches {
+        pub fn available(allowed: bool) {
+            autocfg::emit_possibility("has_assert_matches");
+        }
         pub const AVAILABLE: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
@@ -540,5 +559,20 @@ mod tests {
 
         let allowed = cargo_allowed_features(Some(&tmp));
         assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
+    }
+
+    #[test]
+    fn make_assert_matches_probe() {
+        let expected = r#"
+#![allow(stable_features)]
+#![feature(assert_matches)]
+
+use std::assert_matches;
+"#;
+        let probe = r#"
+use std::assert_matches;
+"#;
+
+        assert_eq!(probes::make_probe(true, "assert_matches", probe), expected);
     }
 }
