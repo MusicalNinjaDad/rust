@@ -346,54 +346,79 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
     }
 
     let mut cargo = Command::new(get_var("CARGO")?);
-    if let Some(dir) = current_dir {
+    if let Some(dir) = &current_dir {
         dbg!(&dir.as_ref());
         cargo.current_dir(dir);
     }
-    cargo.args([
-        "-Zunstable-options",
-        "--config",
-        "unstable.allow-features=[\"unstable-options\"]",
-        "config",
-        "get",
-        "unstable.allow-features",
-    ]);
-    let output = cargo
+    cargo.args(["-Zunstable-options", "config", "get"]);
+    let mut output = cargo
         .output()
         .map_err(|err| BuildError::Other(err.to_string()))?;
+
     if !output.status.success() {
-        return Err(BuildError::Other(format!(
-            "cargo config failed with error {code}: {stderr}",
-            code = output.status,
-            stderr = String::from_utf8_lossy(&output.stderr)
-        )));
+        // Maybe there is a restricted list which doesn't include unstable-options
+        let mut cargo = Command::new(get_var("CARGO")?);
+        if let Some(dir) = &current_dir {
+            dbg!(&dir.as_ref());
+            cargo.current_dir(dir);
+        }
+        cargo.args([
+            "-Zunstable-options",
+            "--config",
+            "unstable.allow-features=[\"unstable-options\"]",
+            "config",
+            "get",
+            "unstable.allow-features",
+        ]);
+        output = cargo
+            .output()
+            .map_err(|err| BuildError::Other(err.to_string()))?;
+
+        if !output.status.success() {
+            // Nope something else went wrong!
+            return Err(BuildError::Other(format!(
+                "cargo config failed with error {code}: {stderr}",
+                code = output.status,
+                stderr = String::from_utf8_lossy(&output.stderr)
+            )));
+        }
     };
+
     let allowed = String::from_utf8_lossy(&output.stdout);
-    let allowed: Vec<_> = allowed
-        .strip_prefix("unstable.allow-features = [")
-        .ok_or_else(|| {
-            BuildError::Other(format!(
-                "invalid cargo config output: {}",
-                String::from_utf8_lossy(&output.stdout)
-            ))
-        })?
-        .strip_suffix("]\n")
-        .ok_or_else(|| {
-            BuildError::Other(format!(
-                "invalid cargo config output: {}",
-                String::from_utf8_lossy(&output.stdout)
-            ))
-        })?
-        .replace("\"", "")
-        .split(", ")
-        .filter(|feature| *feature != "unstable-options")
-        .map(ToString::to_string)
-        .collect();
-    if allowed.is_empty() {
-        Ok(AllowedFeatures::All)
-    } else {
-        Ok(AllowedFeatures::Some(allowed))
-    }
+    let allowed = match allowed
+        .lines()
+        .find(|line| line.starts_with("unstable.allow-features"))
+    {
+        Some(features) => {
+            let features: Vec<_> = features
+                .strip_prefix("unstable.allow-features = [")
+                .ok_or_else(|| {
+                    BuildError::Other(format!(
+                        "invalid cargo config output: {}",
+                        String::from_utf8_lossy(&output.stdout)
+                    ))
+                })?
+                .strip_suffix("]")
+                .ok_or_else(|| {
+                    BuildError::Other(format!(
+                        "invalid cargo config output: {}",
+                        String::from_utf8_lossy(&output.stdout)
+                    ))
+                })?
+                .replace("\"", "")
+                .split(", ")
+                .filter(|feature| *feature != "unstable-options")
+                .map(ToString::to_string)
+                .collect();
+            if features.is_empty() {
+                AllowedFeatures::None
+            } else {
+                AllowedFeatures::Some(features)
+            }
+        }
+        None => AllowedFeatures::All,
+    };
+    Ok(allowed)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -446,5 +471,19 @@ mod tests {
         } else {
             assert_matches!(allowed, Ok(AllowedFeatures::None));
         }
+    }
+
+    #[test]
+    fn all_forbidden() {
+        let tmp = TempDir::new().expect("tempdir");
+        let config_location = tmp.path().join(".cargo");
+        fs::create_dir(&config_location).expect(".cargo created");
+        dbg!(&config_location);
+        let mut config =
+            File::create_new(config_location.join("config.toml")).expect("create config.toml");
+        writeln!(config, "unstable.allow-features = []").expect("added to config");
+
+        let allowed = cargo_allowed_features(Some(&tmp));
+        assert_matches!(allowed, Ok(AllowedFeatures::None));
     }
 }
