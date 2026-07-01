@@ -271,10 +271,12 @@ fn cargo_config<P: AsRef<Path>>(
 
 /// Identify which experimental features are allowed for this build.
 ///
-/// ## Note
-/// - pass `None` to use current working directory (you probably always want to do this!)
-/// - this works fine on any channel and respects whitelists created via cargo unstable.allowed-features
-pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
+/// This works fine on any channel and respects whitelists created via cargo unstable.allowed-features
+pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
+    _cargo_allowed_features(Option::<std::path::PathBuf>::None)
+}
+
+fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
         // cargo won't accept `-Z` - so we're on a not-unstable toolchain
         return Ok(AllowedFeatures(_AllowedFeatures::None));
@@ -376,7 +378,7 @@ mod tests {
     #[test]
     fn no_config_toml() {
         let tmp = TempDir::new().expect("tempdir");
-        let allowed = cargo_allowed_features(Some(&tmp));
+        let allowed = _cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::All)));
             assert!(allowed.unwrap().includes("try_trait_v2"));
@@ -400,7 +402,7 @@ mod tests {
         )
         .expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp)).unwrap();
+        let allowed = _cargo_allowed_features(Some(&tmp)).unwrap();
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
@@ -426,7 +428,7 @@ mod tests {
             File::create_new(config_location.join("config.toml")).expect("create config.toml");
         writeln!(config, "unstable.allow-features = [\"try_trait_v2\"]").expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp)).unwrap();
+        let allowed = _cargo_allowed_features(Some(&tmp)).unwrap();
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
@@ -450,7 +452,7 @@ mod tests {
             File::create_new(config_location.join("config.toml")).expect("create config.toml");
         writeln!(config, "unstable.allow-features = []").expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp));
+        let allowed = _cargo_allowed_features(Some(&tmp));
         assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
     }
 
