@@ -276,7 +276,12 @@ fn cargo_config<P: AsRef<Path>>(
 
 /// Identify which experimental features are allowed for this build.
 ///
-/// This works fine on any channel and respects whitelists created via cargo unstable.allowed-features
+/// This works fine on any channel and respects whitelists (`unstable.allowed-features`) in all
+/// relevant cargo config.toml files.
+/// 
+/// ## Note
+/// - This will not respect additional entries passed at the command line via
+///   `cargo --config unstable.allow-features=[...]`
 pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
     _cargo_allowed_features(Option::<std::path::PathBuf>::None)
 }
