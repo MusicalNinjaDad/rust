@@ -434,7 +434,7 @@ mod tests {
         dbg!(&config_location);
         let mut config =
             File::create_new(config_location.join("config.toml")).expect("create config.toml");
-        writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]").expect("added to config");
+        writeln!(config, "unstable.allow-features = [\"try_trait_v2\"]").expect("added to config");
 
         let allowed = cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
@@ -444,7 +444,7 @@ mod tests {
                 if features == vec!["try_trait_v2"]
             );
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures::None))
+            assert_matches!(allowed, Ok(AllowedFeatures::None));
         }
     }
 }
