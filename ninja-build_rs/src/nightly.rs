@@ -171,7 +171,7 @@ pub trait Nightly {
     /// If you need to test that a feature is available in order to cfg-gate your code then use or
     /// create one of the dedicated check functions. See [AutoCfg::assert_matches_location] for an
     /// example.
-    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: AllowedFeatures);
+    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures);
 
     /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
     /// on 2026-04-10, leaving the macro in the new planned location.
@@ -211,27 +211,31 @@ pub trait Nightly {
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
 
-fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str) {
+fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed_features: &AllowedFeatures) {
     let cfg = format!("unstable_{feature}");
-    let code = format!(
-        r#"
+    autocfg::emit_possibility(&cfg);
+
+    if allowed_features.includes(feature) {
+        let code = format!(
+            r#"
 #![deny(stable_features)]
 #![allow(unused)]
 #![feature({feature})]
 "#
-    );
-    autocfg::emit_possibility(&cfg);
-    if ac.probe_raw(&code).is_ok() {
-        autocfg::emit(&cfg);
+        );
+
+        if ac.probe_raw(&code).is_ok() {
+            autocfg::emit(&cfg);
+        }
     }
 }
 
 impl Nightly for AutoCfg {
-    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: AllowedFeatures) {
+    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures) {
         dbg!(&feature);
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
-                default_unstable_cfg(self, feature);
+                default_unstable_cfg(self, feature, allowed_features);
                 autocfg::emit_possibility("has_assert_matches");
                 if self.probe_raw(probes::assert_matches::AVAILABLE).is_ok() {
                     autocfg::emit("has_assert_matches");
@@ -244,7 +248,7 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::iterator_try_collect => {
-                default_unstable_cfg(self, feature);
+                default_unstable_cfg(self, feature, allowed_features);
                 autocfg::emit_possibility("has_iterator_try_collect");
                 if self
                     .probe_raw(probes::iterator_try_collect::AVAILABLE)
@@ -254,7 +258,7 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::never_type => {
-                default_unstable_cfg(self, feature);
+                default_unstable_cfg(self, feature, allowed_features);
                 autocfg::emit_possibility("has_never_type");
                 if self.probe_raw(probes::never_type::AVAILABLE).is_ok() {
                     autocfg::emit("has_never_type");
@@ -277,14 +281,14 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::try_trait_v2 => {
-                default_unstable_cfg(self, feature);
+                default_unstable_cfg(self, feature, allowed_features);
                 autocfg::emit_possibility("has_try_trait_v2");
                 if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
                     autocfg::emit("has_try_trait_v2");
                 }
             }
             UnstableFeature::try_trait_v2_residual => {
-                default_unstable_cfg(self, feature);
+                default_unstable_cfg(self, feature, allowed_features);
                 autocfg::emit_possibility("has_try_trait_v2_residual");
                 if self
                     .probe_raw(probes::try_trait_v2_residual::AVAILABLE)
@@ -293,7 +297,9 @@ impl Nightly for AutoCfg {
                     autocfg::emit("has_try_trait_v2_residual");
                 }
             }
-            UnstableFeature::Other(feature) => default_unstable_cfg(self, feature),
+            UnstableFeature::Other(feature) => {
+                default_unstable_cfg(self, feature, allowed_features)
+            }
         }
     }
 
@@ -426,6 +432,16 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllowedFeatures(_AllowedFeatures);
 
+impl AllowedFeatures {
+    fn includes(&self, feature: &str) -> bool {
+        match &self.0 {
+            _AllowedFeatures::None => false,
+            _AllowedFeatures::All => true,
+            _AllowedFeatures::Some(features) => features.iter().find(|f| *f == feature).is_some(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum _AllowedFeatures {
     None,
@@ -450,9 +466,11 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let allowed = cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
-            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::All)))
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::All)));
+            assert!(allowed.unwrap().includes("try_trait_v2"));
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)))
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
+            assert!(!allowed.unwrap().includes("try_trait_v2"));
         }
     }
 
@@ -470,15 +488,19 @@ mod tests {
         )
         .expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp));
+        let allowed = cargo_allowed_features(Some(&tmp)).unwrap();
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
-                Ok(AllowedFeatures(_AllowedFeatures::Some(features)))
-                if features == vec!["try_trait_v2", "unstable-options"]
+                AllowedFeatures(_AllowedFeatures::Some(ref features))
+                if features == &vec!["try_trait_v2", "unstable-options"]
             );
+            assert!(allowed.includes("try_trait_v2"));
+            assert!(allowed.includes("unstable-options"));
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
+            assert_matches!(allowed, AllowedFeatures(_AllowedFeatures::None));
+            assert!(!allowed.includes("try_trait_v2"));
+            assert!(!allowed.includes("unstable-options"));
         }
     }
 
@@ -492,15 +514,17 @@ mod tests {
             File::create_new(config_location.join("config.toml")).expect("create config.toml");
         writeln!(config, "unstable.allow-features = [\"try_trait_v2\"]").expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp));
+        let allowed = cargo_allowed_features(Some(&tmp)).unwrap();
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
-                Ok(AllowedFeatures(_AllowedFeatures::Some(features)))
-                if features == vec!["try_trait_v2"]
+                AllowedFeatures(_AllowedFeatures::Some(ref features))
+                if features == &vec!["try_trait_v2"]
             );
+            assert!(allowed.includes("try_trait_v2"));
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
+            assert_matches!(allowed, AllowedFeatures(_AllowedFeatures::None));
+            assert!(!allowed.includes("try_trait_v2"));
         }
     }
 
