@@ -234,8 +234,8 @@ fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
         let code = format!(
             r#"
 #![deny(stable_features)]
-#![allow(unused)]
 #![feature({feature})]
+#![allow(unused)]
 "#
         );
 
