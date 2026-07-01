@@ -1,9 +1,11 @@
 //! Extensions to the amazing [autocfg] designed to help with ergonomically and safely handling
 //! experimental features in nightly.
 
-use std::fmt::Display;
+use std::{fmt::Display, path::Path, process::Command};
 
 use autocfg::AutoCfg;
+
+use crate::{BuildError, Result, get_var};
 
 /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
 /// on 2026-04-10, leaving the macro in the new planned location.
@@ -325,39 +327,60 @@ impl Nightly for AutoCfg {
     }
 }
 
+/// Return the comma-separated list of `unstable.allow-features` from cargo config
+///
+/// ## Note
+/// - `unstable-options` will ALWAYS be in this list, as we need to add it to call `cargo config`
+/// - pass `None` to use current working directory (you probably always want to do this!)
+pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<String> {
+    let mut cargo = Command::new(get_var("CARGO")?);
+    if let Some(dir) = current_dir {
+        dbg!(&dir.as_ref());
+        cargo.current_dir(dir);
+    }
+    cargo.args([
+        "-Zunstable-options",
+        "--config",
+        "unstable.allow-features=[\"unstable-options\"]",
+        "config",
+        "get",
+        "unstable.allow-features",
+    ]);
+    let stdout = cargo.output().expect("output").stdout;
+    let allowed = String::from_utf8_lossy(&stdout);
+    Ok(allowed
+        .strip_prefix("unstable.allow-features = [")
+        .ok_or_else(|| {
+            BuildError::Other(format!(
+                "invalid cargo config output: {output}",
+                output = String::from_utf8_lossy(&stdout)
+            ))
+        })?
+        .strip_suffix("]\n")
+        .ok_or_else(|| {
+            BuildError::Other(format!(
+                "invalid cargo config output: {output}",
+                output = String::from_utf8_lossy(&stdout)
+            ))
+        })?
+        .replace("\"", ""))
+}
+
 #[cfg(test)]
 mod tests {
     use std::{
         fs::{self, File},
         io::Write,
-        process::Command,
     };
 
     use tempfile::TempDir;
-
-    use crate::get_var;
 
     use super::*;
 
     #[test]
     fn no_config_toml() {
         let tmp = TempDir::new().expect("tempdir");
-        let mut cargo = Command::new(get_var("CARGO").expect("cargo var"));
-        cargo.current_dir(tmp.path()).args([
-            "-Zunstable-options",
-            "--config",
-            "unstable.allow-features=[\"unstable-options\"]",
-            "config",
-            "get",
-            "unstable.allow-features",
-        ]);
-        assert!(cargo.status().expect("executed").success());
-        let allowed = cargo.output().expect("output").stdout;
-        let allowed = String::from_utf8_lossy(&allowed);
-        let allowed = allowed
-            .trim_start_matches("unstable.allow-features = [")
-            .trim_end_matches("]\n")
-            .replace("\"", "");
+        let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
         assert_eq!(allowed, "unstable-options");
     }
 
@@ -371,24 +394,7 @@ mod tests {
             File::create_new(config_location.join("config.toml")).expect("create config.toml");
         writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]").expect("added to config");
 
-        let mut cargo = Command::new(get_var("CARGO").expect("cargo var"));
-        cargo.current_dir(tmp.path()).args([
-            "-Zunstable-options",
-            "--config",
-            "unstable.allow-features=[\"unstable-options\"]",
-            "config",
-            "get",
-            "unstable.allow-features",
-        ]);
-
-        assert!(cargo.status().expect("executed").success());
-
-        let allowed = cargo.output().expect("output").stdout;
-        let allowed = String::from_utf8_lossy(&allowed);
-        let allowed = allowed
-            .trim_start_matches("unstable.allow-features = [")
-            .trim_end_matches("]\n")
-            .replace("\"", "");
+        let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
         assert_eq!(allowed, "try_trait_v2, unstable-options");
     }
 }
