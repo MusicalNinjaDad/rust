@@ -307,6 +307,7 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
     {
         None => AllowedFeatures(_AllowedFeatures::All),
         Some(features) => {
+            // default output format is toml
             let features: Vec<_> = features
                 .strip_prefix("unstable.allow-features = [")
                 .ok_or_else(|| {
