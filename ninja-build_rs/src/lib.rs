@@ -49,6 +49,12 @@ impl BuildError {
     }
 }
 
+impl From<autocfg::Error> for BuildError {
+    fn from(e: autocfg::Error) -> Self {
+        BuildError::Other(e.to_string())
+    }
+}
+
 impl From<std::io::Error> for BuildError {
     fn from(e: std::io::Error) -> Self {
         BuildError::IOError(e)
