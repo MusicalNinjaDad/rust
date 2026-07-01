@@ -2,7 +2,6 @@
 //! experimental features in nightly.
 
 use std::{
-    fmt::Display,
     path::Path,
     process::{Command, Output},
 };
@@ -12,47 +11,19 @@ use autocfg::AutoCfg;
 use crate::{BuildError, Result, get_var};
 use probes::{has, make_probe};
 
-/// Location of assert_matches!() macro. Stabilisation was reverted at last minute
-/// on 2026-04-10, leaving the macro in the new planned location.
-///
-/// See [AutoCfg::assert_matches_location] for more details
-#[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
-pub enum AssertMatchesLocation {
-    /// Macro is at `std::assert_matches`
-    Root,
-    /// Macro is at `std::assert_matches::assert_matches`
-    Module,
-}
-
-#[expect(deprecated)]
-impl Display for AssertMatchesLocation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AssertMatchesLocation::Root => write!(f, "assert_matches_in_root"),
-            AssertMatchesLocation::Module => write!(f, "assert_matches_in_module"),
-        }
-    }
-}
-
-#[expect(deprecated)]
-impl AssertMatchesLocation {
-    /// See [AutoCfg::assert_matches_location] for more details
-    pub fn emit_possibilities() {
-        autocfg::emit_possibility(&AssertMatchesLocation::Root.to_string());
-        autocfg::emit_possibility(&AssertMatchesLocation::Module.to_string());
-    }
-}
-
-/// Known features have custom implementation
+/// Known features with `unstable_...` & `has_...`
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UnstableFeature {
+    /// Also offers `assert_matches_location=root/module` to identify whether to
+    /// `use std::assert_matches`(root) or `use std::assert_matches::assert_matches` (module)
     assert_matches,
     iterator_try_collect,
     never_type,
     proc_macro_diagnostic,
     try_trait_v2,
     try_trait_v2_residual,
+    /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
     Other(&'static str),
 }
 
@@ -165,60 +136,25 @@ use std::ops::Residual;
 }
 
 pub trait Nightly {
-    /// Identify whether a an experimental feature flag is available _and_ required on nightly.
-    /// Always fails if feature flags are unavailable.
+    /// Offers at least 2 cfg flags for all [known features](UnstableFeature)
     ///
-    /// ## Usage:
+    /// You must pass a set of [AllowedFeatures], created by calling [cargo_allowed_features]
+    ///
+    /// ## cfg `unstable_...`
     /// - To be used at top-level crate via `#![cfg_attr(unstable_foo, feature(foo))]`
     ///
-    /// ## Cfg-gating
+    /// ## Cfg-gating `has_...`
     /// Do **not** rely on `cfg(not(unstable_foo))` to suggest that `feature(foo)` is stable! There are 3
     /// reasons that `cfg(unstable_foo)` could be `false`:
     ///   1. The build is using `stable`/`beta`
     ///   2. The feature has been stabilised
     ///   3. The compiler is from before the feature was implemented
     ///
-    /// If you need to test that a feature is available in order to cfg-gate your code then use or
-    /// create one of the dedicated check functions. See [AutoCfg::assert_matches_location] for an
-    /// example.
+    /// All [known features](UnstableFeature) have a `has_...` cfg for this purpose.
+    ///
+    /// If you need to test that a feature is available in order to cfg-gate your code and it is not
+    /// on the list of [known features](UnstableFeature), please raise a PR with a suggested probe.
     fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures);
-
-    /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
-    /// on 2026-04-10, leaving the macro in the new planned location.
-    ///
-    /// This will give you one of two config flags (never both)
-    /// - `assert_matches_in_root`
-    /// - `assert_matches_in_module`
-    ///
-    /// If you need a `has_assert_matches` flag you can construct it easily: If this value is
-    /// `Some(location)` then you can guarantee that the `assert_matches!` macro *is* available
-    /// for use in the current configuration.
-    ///
-    /// ### Recommended usage
-    /// #### In your build script:
-    /// ```no_run
-    /// use autocfg::AutoCfg;
-    /// use ninja_build_rs::nightly::{AssertMatchesLocation, Nightly};
-    ///
-    /// let ac = autocfg::new();
-    ///
-    /// AssertMatchesLocation::emit_possibilities();
-    /// if let Some(location) = ac.assert_matches_location() {
-    ///     autocfg::emit(&location.to_string())
-    /// }
-    /// ```
-    ///
-    /// #### In the main code
-    /// ```
-    /// #[cfg(assert_matches_in_root)]
-    /// use std::assert_matches;
-    ///
-    /// #[cfg(assert_matches_in_module)]
-    /// use std::assert_matches::assert_matches;
-    /// ```
-    #[deprecated(since = "0.1.1", note = "handled by `emit_unstable_feature`")]
-    #[expect(deprecated)]
-    fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
 
 fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
@@ -305,39 +241,6 @@ impl Nightly for AutoCfg {
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature, allowed),
         }
     }
-
-    #[expect(deprecated)]
-    fn assert_matches_location(&self) -> Option<AssertMatchesLocation> {
-        let in_root = r#"
-        #![allow(stable_features)]
-        #![feature(assert_matches)]
-        use std::assert_matches;
-
-        #[allow(dead_code)]
-        fn main() {
-            assert_matches!(Some(4), Some(_));
-        }
-            "#;
-
-        let in_module = r#"
-        #![allow(stable_features)]
-        #![feature(assert_matches)]
-        use std::assert_matches::assert_matches;
-
-        #[allow(dead_code)]
-        fn main() {
-            assert_matches!(Some(4), Some(_));
-        }
-            "#;
-
-        if self.probe_raw(in_root).is_ok() {
-            Some(AssertMatchesLocation::Root)
-        } else if self.probe_raw(in_module).is_ok() {
-            Some(AssertMatchesLocation::Module)
-        } else {
-            None
-        }
-    }
 }
 
 pub fn cargo_unstable() -> Result<bool> {
@@ -366,10 +269,11 @@ fn cargo_config<P: AsRef<Path>>(
         .map_err(|err| BuildError::Other(err.to_string()))
 }
 
-/// Return the comma-separated list of `unstable.allow-features` from cargo config
+/// Identify which experimental features are allowed for this build.
 ///
 /// ## Note
 /// - pass `None` to use current working directory (you probably always want to do this!)
+/// - this works fine on any channel and respects whitelists created via cargo unstable.allowed-features
 pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
         // cargo won't accept `-Z` - so we're on a not-unstable toolchain
@@ -432,10 +336,15 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
     Ok(allowed)
 }
 
+/// The set of allowed experimental features for the current build. The only way to create this
+/// is via a call to [cargo_allowed_features] - this is deliberate, to ensure that people who have
+/// decided to restrict the experimental features they use to a whitelist are respected.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllowedFeatures(_AllowedFeatures);
 
 impl AllowedFeatures {
+    /// Not public as this doesn't consider any restrictions made via `RUSTFLAGS`, those
+    /// features will be disabled for all calls to rustc when running probes.
     fn includes(&self, feature: &str) -> bool {
         match &self.0 {
             _AllowedFeatures::None => false,
