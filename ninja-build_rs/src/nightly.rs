@@ -327,12 +327,21 @@ impl Nightly for AutoCfg {
     }
 }
 
+pub fn cargo_unstable() -> Result<bool> {
+    Ok(Command::new(get_var("CARGO")?)
+        .args(["-Zunstable-options", "help"])
+        .status()
+        .map_err(|err| BuildError::Other(err.to_string()))?
+        .success())
+}
+
 /// Return the comma-separated list of `unstable.allow-features` from cargo config
 ///
 /// ## Note
 /// - `unstable-options` will ALWAYS be in this list, as we need to add it to call `cargo config`
 /// - pass `None` to use current working directory (you probably always want to do this!)
 pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<String> {
+    assert!(cargo_unstable()?);
     let mut cargo = Command::new(get_var("CARGO")?);
     if let Some(dir) = current_dir {
         dbg!(&dir.as_ref());
@@ -349,6 +358,13 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
     let output = cargo
         .output()
         .map_err(|err| BuildError::Other(err.to_string()))?;
+    if !output.status.success() {
+        return Err(BuildError::Other(format!(
+            "cargo config failed with error {code}: {stderr}",
+            code = output.status,
+            stderr = String::from_utf8_lossy(&output.stderr)
+        )));
+    };
     let allowed = String::from_utf8_lossy(&output.stdout);
     Ok(allowed
         .strip_prefix("unstable.allow-features = [")
