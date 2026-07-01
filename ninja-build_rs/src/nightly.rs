@@ -85,6 +85,8 @@ mod probes {
             _probe.push_str(")]");
             _probe.push('\n');
         };
+        _probe.push_str("#![allow(unused)]");
+        _probe.push('\n');
         _probe.push_str(probe);
         _probe
     }
@@ -106,7 +108,6 @@ use std::assert_matches;
         pub const ROOT: &str = r#"
 use std::assert_matches;
 
-#[allow(dead_code)]
 fn main() {
     assert_matches!(Some(4), Some(_));
 }
@@ -118,7 +119,6 @@ fn main() {
 #![feature(assert_matches)]
 use std::assert_matches::assert_matches;
 
-#[allow(dead_code)]
 fn main() {
     assert_matches!(Some(4), Some(_));
 }
@@ -127,7 +127,6 @@ fn main() {
     pub mod iterator_try_collect {
         // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
         pub const AVAILABLE: &str = r#"
-#![allow(unused)]
 fn try_collect() {
     let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut vec![Some(1)].into_iter());
 }
@@ -135,7 +134,6 @@ fn try_collect() {
     }
     pub mod never_type {
         pub const AVAILABLE: &str = r#"
-#![allow(unused)]
 type Bang = !;
 "#;
     }
@@ -148,7 +146,6 @@ extern crate proc_macro;
 "#;
 
         pub const AVAILABLE: &str = r#"
-#![allow(unused)]
 extern crate proc_macro;
 use proc_macro::Diagnostic;      
 "#;
@@ -156,14 +153,12 @@ use proc_macro::Diagnostic;
 
     pub mod try_trait_v2 {
         pub const AVAILABLE: &str = r#"
-#![allow(unused)]
 use std::ops::Try;
 "#;
     }
 
     pub mod try_trait_v2_residual {
         pub const AVAILABLE: &str = r#"
-#![allow(unused)]
 use std::ops::Residual;
 "#;
     }
@@ -555,6 +550,7 @@ mod tests {
         let expected = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
+#![allow(unused)]
 
 use std::assert_matches;
 "#;
