@@ -364,7 +364,7 @@ fn cargo_config<P: AsRef<Path>>(
 pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
         // cargo won't accept `-Z` - so we're on a not-unstable toolchain
-        return Ok(AllowedFeatures::None);
+        return Ok(AllowedFeatures(_AllowedFeatures::None));
     }
 
     let mut added_unstable_options = false;
@@ -390,7 +390,7 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
     {
-        None => AllowedFeatures::All,
+        None => AllowedFeatures(_AllowedFeatures::All),
         Some(features) => {
             let features: Vec<_> = features
                 .strip_prefix("unstable.allow-features = [")
@@ -414,9 +414,9 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
                 .map(ToString::to_string)
                 .collect();
             if features.is_empty() {
-                AllowedFeatures::None
+                AllowedFeatures(_AllowedFeatures::None)
             } else {
-                AllowedFeatures::Some(features)
+                AllowedFeatures(_AllowedFeatures::Some(features))
             }
         }
     };
@@ -424,7 +424,10 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AllowedFeatures {
+pub struct AllowedFeatures(_AllowedFeatures);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum _AllowedFeatures {
     None,
     All,
     Some(Vec<String>),
@@ -447,9 +450,9 @@ mod tests {
         let tmp = TempDir::new().expect("tempdir");
         let allowed = cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
-            assert_matches!(allowed, Ok(AllowedFeatures::All))
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::All)))
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures::None))
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)))
         }
     }
 
@@ -471,11 +474,11 @@ mod tests {
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
-                Ok(AllowedFeatures::Some(features))
+                Ok(AllowedFeatures(_AllowedFeatures::Some(features)))
                 if features == vec!["try_trait_v2", "unstable-options"]
             );
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures::None));
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
         }
     }
 
@@ -493,11 +496,11 @@ mod tests {
         if cargo_unstable().expect("cargo_unstable") {
             assert_matches!(
                 allowed,
-                Ok(AllowedFeatures::Some(features))
+                Ok(AllowedFeatures(_AllowedFeatures::Some(features)))
                 if features == vec!["try_trait_v2"]
             );
         } else {
-            assert_matches!(allowed, Ok(AllowedFeatures::None));
+            assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
         }
     }
 
@@ -512,6 +515,6 @@ mod tests {
         writeln!(config, "unstable.allow-features = []").expect("added to config");
 
         let allowed = cargo_allowed_features(Some(&tmp));
-        assert_matches!(allowed, Ok(AllowedFeatures::None));
+        assert_matches!(allowed, Ok(AllowedFeatures(_AllowedFeatures::None)));
     }
 }
