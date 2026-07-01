@@ -70,7 +70,11 @@ impl From<String> for BuildError {
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
+    use std::{
+        fs::{self, File},
+        io::Write,
+        process::Command,
+    };
 
     use tempfile::TempDir;
 
@@ -107,8 +111,40 @@ mod tests {
         let allowed = cargo.output().expect("output").stdout;
         let allowed = String::from_utf8_lossy(&allowed);
         let allowed = allowed
-            .trim_start_matches("unstable.allow-features = [\"")
-            .trim_end_matches("\"]\n");
+            .trim_start_matches("unstable.allow-features = [")
+            .trim_end_matches("]\n")
+            .replace("\"", "");
         assert_eq!(allowed, "unstable-options");
+    }
+
+    #[test]
+    fn allowed_features() {
+        let tmp = TempDir::new().expect("tempdir");
+        let config_location = tmp.path().join(".cargo");
+        fs::create_dir(&config_location).expect(".cargo created");
+        dbg!(&config_location);
+        let mut config =
+            File::create_new(config_location.join("config.toml")).expect("create config.toml");
+        writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]").expect("added to config");
+
+        let mut cargo = Command::new(get_var("CARGO").expect("cargo var"));
+        cargo.current_dir(tmp.path()).args([
+            "-Zunstable-options",
+            "--config",
+            "unstable.allow-features=[\"unstable-options\"]",
+            "config",
+            "get",
+            "unstable.allow-features",
+        ]);
+
+        assert!(cargo.status().expect("executed").success());
+
+        let allowed = cargo.output().expect("output").stdout;
+        let allowed = String::from_utf8_lossy(&allowed);
+        let allowed = allowed
+            .trim_start_matches("unstable.allow-features = [")
+            .trim_end_matches("]\n")
+            .replace("\"", "");
+        assert_eq!(allowed, "try_trait_v2, unstable-options");
     }
 }
