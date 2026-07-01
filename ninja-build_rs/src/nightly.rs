@@ -340,11 +340,9 @@ pub fn cargo_unstable() -> Result<bool> {
 /// ## Note
 /// - `unstable-options` will NEVER be in this list, as we need to add it to call `cargo config`
 /// - pass `None` to use current working directory (you probably always want to do this!)
-pub fn cargo_allowed_features<P: AsRef<Path>>(
-    current_dir: Option<P>,
-) -> Result<Option<Vec<String>>> {
+pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
-        return Ok(None);
+        return Ok(AllowedFeatures::None);
     }
 
     let mut cargo = Command::new(get_var("CARGO")?);
@@ -392,15 +390,23 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(
         .map(ToString::to_string)
         .collect();
     if allowed.is_empty() {
-        Ok(None)
+        Ok(AllowedFeatures::All)
     } else {
-        Ok(Some(allowed))
+        Ok(AllowedFeatures::Some(allowed))
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AllowedFeatures {
+    None,
+    All,
+    Some(Vec<String>),
 }
 
 #[cfg(test)]
 mod tests {
     use std::{
+        assert_matches,
         fs::{self, File},
         io::Write,
     };
@@ -413,7 +419,11 @@ mod tests {
     fn no_config_toml() {
         let tmp = TempDir::new().expect("tempdir");
         let allowed = cargo_allowed_features(Some(&tmp));
-        assert!(allowed.expect("allowed features ok").is_none())
+        if cargo_unstable().expect("cargo_unstable") {
+            assert_matches!(allowed, Ok(AllowedFeatures::All))
+        } else {
+            assert_matches!(allowed, Ok(AllowedFeatures::None))
+        }
     }
 
     #[test]
@@ -428,14 +438,13 @@ mod tests {
 
         let allowed = cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
-            assert_eq!(
-                allowed
-                    .expect("allowed features ok")
-                    .expect("some allowed features"),
-                vec!["try_trait_v2"]
+            assert_matches!(
+                allowed,
+                Ok(AllowedFeatures::Some(features))
+                if features == vec!["try_trait_v2"]
             );
         } else {
-            assert!(allowed.expect("allowed features ok").is_none())
+            assert_matches!(allowed, Ok(AllowedFeatures::None))
         }
     }
 }
