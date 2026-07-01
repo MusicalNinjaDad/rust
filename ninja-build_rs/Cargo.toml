@@ -13,3 +13,6 @@ license = "MIT"
 
 [dependencies]
 autocfg = "1.5.1"
+
+[dev-dependencies]
+tempfile = "3.27.0"
