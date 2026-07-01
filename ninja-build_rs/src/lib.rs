@@ -107,9 +107,8 @@ mod tests {
         let allowed = cargo.output().expect("output").stdout;
         let allowed = String::from_utf8_lossy(&allowed);
         let allowed = allowed
-            .strip_prefix("unstable.allow-features = [\"")
-            .expect("starts correctly");
-        let allowed = allowed.strip_suffix("\"]\n").expect("ends correctly");
+            .trim_start_matches("unstable.allow-features = [\"")
+            .trim_end_matches("\"]\n");
         assert_eq!(allowed, "unstable-options");
     }
 }
