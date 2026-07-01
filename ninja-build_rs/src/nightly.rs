@@ -91,7 +91,7 @@ mod probes {
 
         const FEATURE: &str = "assert_matches";
 
-        pub fn available(allowed: bool, ac: &AutoCfg) {
+        pub fn available(ac: &AutoCfg, allowed: bool) {
             let cfg = "has_assert_matches";
             autocfg::emit_possibility(cfg);
             let probe = r#"
@@ -237,11 +237,11 @@ pub trait Nightly {
     fn assert_matches_location(&self) -> Option<AssertMatchesLocation>;
 }
 
-fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed_features: &AllowedFeatures) {
+fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
     let cfg = format!("unstable_{feature}");
     autocfg::emit_possibility(&cfg);
 
-    if allowed_features.includes(feature) {
+    if allowed {
         let code = format!(
             r#"
 #![deny(stable_features)]
@@ -259,11 +259,11 @@ fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed_features: &
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures) {
         dbg!(&feature);
+        let allowed = allowed_features.includes(feature);
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
-                let allowed = allowed_features.includes("assert_matches");
-                default_unstable_cfg(self, feature, allowed_features);
-                probes::assert_matches::available(allowed, self);
+                default_unstable_cfg(self, feature, allowed);
+                probes::assert_matches::available(self, allowed);
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
                 if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
                     autocfg::emit("assert_matches_location=\"root\"")
@@ -272,7 +272,7 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::iterator_try_collect => {
-                default_unstable_cfg(self, feature, allowed_features);
+                default_unstable_cfg(self, feature, allowed);
                 autocfg::emit_possibility("has_iterator_try_collect");
                 if self
                     .probe_raw(probes::iterator_try_collect::AVAILABLE)
@@ -282,7 +282,7 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::never_type => {
-                default_unstable_cfg(self, feature, allowed_features);
+                default_unstable_cfg(self, feature, allowed);
                 autocfg::emit_possibility("has_never_type");
                 if self.probe_raw(probes::never_type::AVAILABLE).is_ok() {
                     autocfg::emit("has_never_type");
@@ -305,14 +305,14 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::try_trait_v2 => {
-                default_unstable_cfg(self, feature, allowed_features);
+                default_unstable_cfg(self, feature, allowed);
                 autocfg::emit_possibility("has_try_trait_v2");
                 if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
                     autocfg::emit("has_try_trait_v2");
                 }
             }
             UnstableFeature::try_trait_v2_residual => {
-                default_unstable_cfg(self, feature, allowed_features);
+                default_unstable_cfg(self, feature, allowed);
                 autocfg::emit_possibility("has_try_trait_v2_residual");
                 if self
                     .probe_raw(probes::try_trait_v2_residual::AVAILABLE)
@@ -321,9 +321,7 @@ impl Nightly for AutoCfg {
                     autocfg::emit("has_try_trait_v2_residual");
                 }
             }
-            UnstableFeature::Other(feature) => {
-                default_unstable_cfg(self, feature, allowed_features)
-            }
+            UnstableFeature::Other(feature) => default_unstable_cfg(self, feature, allowed),
         }
     }
 
