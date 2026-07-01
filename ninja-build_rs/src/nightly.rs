@@ -408,7 +408,8 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
                     ))
                 })?
                 .replace("\"", "")
-                .split(", ")
+                .split(",")
+                .map(str::trim)
                 .filter(|feature| !added_unstable_options || *feature != "unstable-options")
                 .map(ToString::to_string)
                 .collect();
