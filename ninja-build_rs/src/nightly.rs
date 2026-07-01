@@ -171,7 +171,7 @@ pub trait Nightly {
     /// If you need to test that a feature is available in order to cfg-gate your code then use or
     /// create one of the dedicated check functions. See [AutoCfg::assert_matches_location] for an
     /// example.
-    fn emit_unstable_feature(&self, feature: &'static str);
+    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: AllowedFeatures);
 
     /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
     /// on 2026-04-10, leaving the macro in the new planned location.
@@ -227,7 +227,7 @@ fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str) {
 }
 
 impl Nightly for AutoCfg {
-    fn emit_unstable_feature(&self, feature: &'static str) {
+    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: AllowedFeatures) {
         dbg!(&feature);
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
