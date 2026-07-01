@@ -54,6 +54,10 @@ jobs:
     - uses: actions/checkout@v6
     - name: Run tests
       run: cargo test
+    - name: Test fixture
+      if: ${{ matrix.crate == 'ninja-build_rs' }}
+      working-directory: ${{ matrix.crate }}/examples/assert_matches
+      run: ./test.sh
 
   lint:
     needs:
