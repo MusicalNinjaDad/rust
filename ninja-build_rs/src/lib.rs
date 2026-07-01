@@ -70,6 +70,10 @@ impl From<String> for BuildError {
 
 #[cfg(test)]
 mod tests {
+    use std::process::Command;
+
+    use tempfile::TempDir;
+
     use super::*;
 
     #[test]
@@ -85,5 +89,27 @@ mod tests {
         let err = get_var(random_key);
         assert!(err.is_err());
         assert!(format!("{err:?}").contains(random_key));
+    }
+
+    #[test]
+    fn no_config_toml() {
+        let tmp = TempDir::new().expect("tempdir");
+        let mut cargo = Command::new(get_var("CARGO").expect("cargo var"));
+        cargo.current_dir(tmp.path()).args([
+            "-Zunstable-options",
+            "--config",
+            "unstable.allow-features=[\"unstable-options\"]",
+            "config",
+            "get",
+            "unstable.allow-features",
+        ]);
+        assert!(cargo.status().expect("executed").success());
+        let allowed = cargo.output().expect("output").stdout;
+        let allowed = String::from_utf8_lossy(&allowed);
+        let allowed = allowed
+            .strip_prefix("unstable.allow-features = [\"")
+            .expect("starts correctly");
+        let allowed = allowed.strip_suffix("\"]\n").expect("ends correctly");
+        assert_eq!(allowed, "unstable-options");
     }
 }
