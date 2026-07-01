@@ -245,7 +245,12 @@ impl Nightly for AutoCfg {
 
 pub fn cargo_unstable() -> Result<bool> {
     Ok(Command::new(get_var("CARGO")?)
-        .args(["-Zunstable-options", "help"])
+        .args([
+            "-Zunstable-options",
+            "--config",
+            "unstable.allow-features=[\"unstable-options\"]",
+            "help",
+        ])
         .status()
         .map_err(|err| BuildError::Other(err.to_string()))?
         .success())
