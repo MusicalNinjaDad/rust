@@ -340,7 +340,13 @@ pub fn cargo_unstable() -> Result<bool> {
 /// ## Note
 /// - `unstable-options` will ALWAYS be in this list, as we need to add it to call `cargo config`
 /// - pass `None` to use current working directory (you probably always want to do this!)
-pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<Vec<String>> {
+pub fn cargo_allowed_features<P: AsRef<Path>>(
+    current_dir: Option<P>,
+) -> Result<Option<Vec<String>>> {
+    if !cargo_unstable()? {
+        return Ok(None);
+    }
+
     let mut cargo = Command::new(get_var("CARGO")?);
     if let Some(dir) = current_dir {
         dbg!(&dir.as_ref());
@@ -365,7 +371,7 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
         )));
     };
     let allowed = String::from_utf8_lossy(&output.stdout);
-    Ok(allowed
+    let allowed = allowed
         .strip_prefix("unstable.allow-features = [")
         .ok_or_else(|| {
             BuildError::Other(format!(
@@ -383,7 +389,8 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
         .replace("\"", "")
         .split(", ")
         .map(ToString::to_string)
-        .collect())
+        .collect();
+    Ok(Some(allowed))
 }
 
 #[cfg(test)]
@@ -399,27 +406,40 @@ mod tests {
 
     #[test]
     fn no_config_toml() {
+        let tmp = TempDir::new().expect("tempdir");
+        let allowed = cargo_allowed_features(Some(&tmp));
         if cargo_unstable().expect("cargo_unstable") {
-            let tmp = TempDir::new().expect("tempdir");
-            let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-            assert_eq!(allowed, vec!["unstable-options"]);
+            assert_eq!(
+                allowed
+                    .expect("allowed features ok")
+                    .expect("some allowed features"),
+                vec!["unstable-options"]
+            );
+        } else {
+            assert!(allowed.expect("allowed features ok").is_none())
         }
     }
 
     #[test]
     fn allowed_features() {
-        if cargo_unstable().expect("cargo_unstable") {
-            let tmp = TempDir::new().expect("tempdir");
-            let config_location = tmp.path().join(".cargo");
-            fs::create_dir(&config_location).expect(".cargo created");
-            dbg!(&config_location);
-            let mut config =
-                File::create_new(config_location.join("config.toml")).expect("create config.toml");
-            writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]")
-                .expect("added to config");
+        let tmp = TempDir::new().expect("tempdir");
+        let config_location = tmp.path().join(".cargo");
+        fs::create_dir(&config_location).expect(".cargo created");
+        dbg!(&config_location);
+        let mut config =
+            File::create_new(config_location.join("config.toml")).expect("create config.toml");
+        writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]").expect("added to config");
 
-            let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-            assert_eq!(allowed, vec!["try_trait_v2", "unstable-options"]);
+        let allowed = cargo_allowed_features(Some(&tmp));
+        if cargo_unstable().expect("cargo_unstable") {
+            assert_eq!(
+                allowed
+                    .expect("allowed features ok")
+                    .expect("some allowed features"),
+                vec!["try_trait_v2", "unstable-options"]
+            );
+        } else {
+            assert!(allowed.expect("allowed features ok").is_none())
         }
     }
 }
