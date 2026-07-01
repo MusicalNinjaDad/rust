@@ -340,7 +340,7 @@ pub fn cargo_unstable() -> Result<bool> {
 /// ## Note
 /// - `unstable-options` will ALWAYS be in this list, as we need to add it to call `cargo config`
 /// - pass `None` to use current working directory (you probably always want to do this!)
-pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<String> {
+pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<Vec<String>> {
     let mut cargo = Command::new(get_var("CARGO")?);
     if let Some(dir) = current_dir {
         dbg!(&dir.as_ref());
@@ -380,7 +380,10 @@ pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<
                 String::from_utf8_lossy(&output.stdout)
             ))
         })?
-        .replace("\"", ""))
+        .replace("\"", "")
+        .split(", ")
+        .map(ToString::to_string)
+        .collect())
 }
 
 #[cfg(test)]
@@ -399,7 +402,7 @@ mod tests {
         if cargo_unstable().expect("cargo_unstable") {
             let tmp = TempDir::new().expect("tempdir");
             let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-            assert_eq!(allowed, "unstable-options");
+            assert_eq!(allowed, vec!["unstable-options"]);
         }
     }
 
@@ -416,7 +419,7 @@ mod tests {
                 .expect("added to config");
 
             let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-            assert_eq!(allowed, "try_trait_v2, unstable-options");
+            assert_eq!(allowed, vec!["try_trait_v2", "unstable-options"]);
         }
     }
 }
