@@ -341,7 +341,6 @@ pub fn cargo_unstable() -> Result<bool> {
 /// - `unstable-options` will ALWAYS be in this list, as we need to add it to call `cargo config`
 /// - pass `None` to use current working directory (you probably always want to do this!)
 pub fn cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<String> {
-    assert!(cargo_unstable()?);
     let mut cargo = Command::new(get_var("CARGO")?);
     if let Some(dir) = current_dir {
         dbg!(&dir.as_ref());
@@ -397,22 +396,27 @@ mod tests {
 
     #[test]
     fn no_config_toml() {
-        let tmp = TempDir::new().expect("tempdir");
-        let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-        assert_eq!(allowed, "unstable-options");
+        if cargo_unstable().expect("cargo_unstable") {
+            let tmp = TempDir::new().expect("tempdir");
+            let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
+            assert_eq!(allowed, "unstable-options");
+        }
     }
 
     #[test]
     fn allowed_features() {
-        let tmp = TempDir::new().expect("tempdir");
-        let config_location = tmp.path().join(".cargo");
-        fs::create_dir(&config_location).expect(".cargo created");
-        dbg!(&config_location);
-        let mut config =
-            File::create_new(config_location.join("config.toml")).expect("create config.toml");
-        writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]").expect("added to config");
+        if cargo_unstable().expect("cargo_unstable") {
+            let tmp = TempDir::new().expect("tempdir");
+            let config_location = tmp.path().join(".cargo");
+            fs::create_dir(&config_location).expect(".cargo created");
+            dbg!(&config_location);
+            let mut config =
+                File::create_new(config_location.join("config.toml")).expect("create config.toml");
+            writeln!(config, "unstable.allow-features=[\"try_trait_v2\"]")
+                .expect("added to config");
 
-        let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
-        assert_eq!(allowed, "try_trait_v2, unstable-options");
+            let allowed = cargo_allowed_features(Some(&tmp)).expect("allowed features");
+            assert_eq!(allowed, "try_trait_v2, unstable-options");
+        }
     }
 }
