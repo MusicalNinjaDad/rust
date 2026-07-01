@@ -127,9 +127,7 @@ fn main() {
     pub mod iterator_try_collect {
         // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
         pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
 #![allow(unused)]
-#![feature(iterator_try_collect)]
 fn try_collect() {
     let _: Option<Vec<_>> = std::iter::Iterator::try_collect(&mut vec![Some(1)].into_iter());
 }
@@ -137,9 +135,7 @@ fn try_collect() {
     }
     pub mod never_type {
         pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
 #![allow(unused)]
-#![feature(never_type)]
 type Bang = !;
 "#;
     }
@@ -162,18 +158,14 @@ use proc_macro::Diagnostic;
 
     pub mod try_trait_v2 {
         pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
 #![allow(unused)]
-#![feature(try_trait_v2)]
 use std::ops::Try;
 "#;
     }
 
     pub mod try_trait_v2_residual {
         pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
 #![allow(unused)]
-#![feature(try_trait_v2_residual)]
 use std::ops::Residual;
 "#;
     }
@@ -277,20 +269,16 @@ impl Nightly for AutoCfg {
             }
             UnstableFeature::iterator_try_collect => {
                 default_unstable_cfg(self, feature, allowed);
-                autocfg::emit_possibility("has_iterator_try_collect");
-                if self
-                    .probe_raw(probes::iterator_try_collect::AVAILABLE)
-                    .is_ok()
-                {
-                    autocfg::emit("has_iterator_try_collect");
-                }
+                has(
+                    ac,
+                    feature,
+                    allowed,
+                    probes::iterator_try_collect::AVAILABLE,
+                );
             }
             UnstableFeature::never_type => {
                 default_unstable_cfg(self, feature, allowed);
-                autocfg::emit_possibility("has_never_type");
-                if self.probe_raw(probes::never_type::AVAILABLE).is_ok() {
-                    autocfg::emit("has_never_type");
-                }
+                has(ac, feature, allowed, probes::never_type::AVAILABLE);
             }
             UnstableFeature::proc_macro_diagnostic => {
                 autocfg::emit_possibility("unstable_proc_macro_diagnostic");
@@ -310,20 +298,16 @@ impl Nightly for AutoCfg {
             }
             UnstableFeature::try_trait_v2 => {
                 default_unstable_cfg(self, feature, allowed);
-                autocfg::emit_possibility("has_try_trait_v2");
-                if self.probe_raw(probes::try_trait_v2::AVAILABLE).is_ok() {
-                    autocfg::emit("has_try_trait_v2");
-                }
+                has(ac, feature, allowed, probes::try_trait_v2::AVAILABLE);
             }
             UnstableFeature::try_trait_v2_residual => {
                 default_unstable_cfg(self, feature, allowed);
-                autocfg::emit_possibility("has_try_trait_v2_residual");
-                if self
-                    .probe_raw(probes::try_trait_v2_residual::AVAILABLE)
-                    .is_ok()
-                {
-                    autocfg::emit("has_try_trait_v2_residual");
-                }
+                has(
+                    ac,
+                    feature,
+                    allowed,
+                    probes::try_trait_v2_residual::AVAILABLE,
+                );
             }
             UnstableFeature::Other(feature) => default_unstable_cfg(self, feature, allowed),
         }
