@@ -10,6 +10,7 @@ use std::{
 use autocfg::AutoCfg;
 
 use crate::{BuildError, Result, get_var};
+use probes::{has, make_probe};
 
 /// Location of assert_matches!() macro. Stabilisation was reverted at last minute
 /// on 2026-04-10, leaving the macro in the new planned location.
@@ -103,8 +104,6 @@ mod probes {
 use std::assert_matches;
 "#;
         pub const ROOT: &str = r#"
-#![allow(stable_features)]
-#![feature(assert_matches)]
 use std::assert_matches;
 
 #[allow(dead_code)]
@@ -113,6 +112,7 @@ fn main() {
 }
 "#;
 
+        // was stabilised in root - so no need to remove feature from this probe
         pub const MODULE: &str = r#"
 #![allow(stable_features)]
 #![feature(assert_matches)]
@@ -263,11 +263,15 @@ impl Nightly for AutoCfg {
         match UnstableFeature::from(feature) {
             UnstableFeature::assert_matches => {
                 default_unstable_cfg(self, feature, allowed);
-                probes::has(ac, feature, allowed, probes::assert_matches::AVAILABLE);
+                has(ac, feature, allowed, probes::assert_matches::AVAILABLE);
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
-                if self.probe_raw(probes::assert_matches::ROOT).is_ok() {
+                if self
+                    .probe_raw(&make_probe(feature, allowed, probes::assert_matches::ROOT))
+                    .is_ok()
+                {
                     autocfg::emit("assert_matches_location=\"root\"")
-                } else if self.probe_raw(probes::assert_matches::MODULE).is_ok() {
+                } else if !allowed & self.probe_raw(probes::assert_matches::MODULE).is_ok() {
+                    //    ^^^^^^^^ assert_matches was stabilised in root
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
             }
