@@ -142,15 +142,13 @@ type Bang = !;
     pub mod proc_macro_diagnostic {
         pub const UNSTABLE: &str = r#"
 #![deny(stable_features)]
-#![allow(unused)]
 #![feature(proc_macro_diagnostic)]
+#![allow(unused)]
 extern crate proc_macro;
 "#;
 
         pub const AVAILABLE: &str = r#"
-#![allow(stable_features)]
 #![allow(unused)]
-#![feature(proc_macro_diagnostic)]
 extern crate proc_macro;
 use proc_macro::Diagnostic;      
 "#;
@@ -282,19 +280,19 @@ impl Nightly for AutoCfg {
             }
             UnstableFeature::proc_macro_diagnostic => {
                 autocfg::emit_possibility("unstable_proc_macro_diagnostic");
-                if self
-                    .probe_raw(probes::proc_macro_diagnostic::UNSTABLE)
-                    .is_ok()
+                if allowed
+                    && self
+                        .probe_raw(probes::proc_macro_diagnostic::UNSTABLE)
+                        .is_ok()
                 {
                     autocfg::emit("unstable_proc_macro_diagnostic");
                 }
-                autocfg::emit_possibility("has_proc_macro_diagnostic");
-                if self
-                    .probe_raw(probes::proc_macro_diagnostic::AVAILABLE)
-                    .is_ok()
-                {
-                    autocfg::emit("has_proc_macro_diagnostic");
-                }
+                has(
+                    ac,
+                    feature,
+                    allowed,
+                    probes::proc_macro_diagnostic::AVAILABLE,
+                );
             }
             UnstableFeature::try_trait_v2 => {
                 default_unstable_cfg(self, feature, allowed);
