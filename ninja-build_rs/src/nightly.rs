@@ -285,6 +285,13 @@ fn cargo_config<P: AsRef<Path>>(
 /// relevant cargo config.toml files.
 ///
 /// ## Note
+/// 
+/// Due to limitations in the information provided by cargo:
+/// 
+/// - This will obtain config.toml files based upon `OUT_DIR`. If this is not under the project
+///   root, you can override by providing an alternative path via the environment variable
+///   `NINJA_CARGO_CONFIG_DIR`. See cargo's documentation on config file hierarchical structure
+///   for more details.
 /// - This will not respect additional entries passed at the command line via
 ///   `cargo --config unstable.allow-features=[...]`
 pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
