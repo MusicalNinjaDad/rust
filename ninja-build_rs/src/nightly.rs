@@ -270,22 +270,6 @@ fn cargo_config<P: AsRef<Path>>(
     }
     cargo.args(["config", "get"]);
 
-    dbg!("manifest at compile time");
-    let manifest = env!("CARGO_MANIFEST_DIR");
-    dbg!(manifest);
-
-    let out_dir = std::env::var("OUT_DIR");
-    dbg!(out_dir);
-
-    dbg!("manifest at runtime");
-    dbg!(std::env::var("CARGO_MANIFEST_DIR"));
-
-    dbg!("pwd");
-    let _ = Command::new("pwd").status();
-
-    dbg!("std::env::current_dir()");
-    dbg!(std::env::current_dir());
-
     dbg!(&cargo);
 
     cargo
@@ -302,7 +286,10 @@ fn cargo_config<P: AsRef<Path>>(
 /// - This will not respect additional entries passed at the command line via
 ///   `cargo --config unstable.allow-features=[...]`
 pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
-    _cargo_allowed_features(Option::<std::path::PathBuf>::None)
+    let cwd = std::env::var("NINJA_CARGO_CONFIG_DIR")
+        .or_else(|_| std::env::var("OUT_DIR"))
+        .ok();
+    _cargo_allowed_features(cwd)
 }
 
 fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
