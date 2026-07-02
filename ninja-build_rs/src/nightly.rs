@@ -269,6 +269,10 @@ fn cargo_config<P: AsRef<Path>>(
         cargo.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
     }
     cargo.args(["config", "get"]);
+
+    let _ = Command::new("pwd").status();
+    dbg!(&cargo);
+
     cargo
         .output()
         .map_err(|err| BuildError::Other(err.to_string()))
