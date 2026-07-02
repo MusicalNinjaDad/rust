@@ -317,8 +317,10 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
         }
     };
 
-    let allowed = String::from_utf8_lossy(&output.stdout);
-    let allowed = match allowed
+    let cargo_config = String::from_utf8_lossy(&output.stdout);
+    dbg!(&cargo_config);
+
+    let allowed = match cargo_config
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
     {
