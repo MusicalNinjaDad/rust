@@ -251,8 +251,9 @@ pub fn cargo_unstable() -> Result<bool> {
             "unstable.allow-features=[\"unstable-options\"]",
             "help",
         ])
-        .status()
+        .output()
         .map_err(|err| BuildError::Other(err.to_string()))?
+        .status
         .success())
 }
 
