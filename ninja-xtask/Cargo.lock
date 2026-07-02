@@ -228,12 +228,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3910c73aedf18f9437a2a6f9d73718fe7297223e13a6c87b4c1571b4a557a17"
 dependencies = [
  "autocfg",
- "ninja-build_rs",
+ "ninja-build_rs 0.1.2",
  "proc-macro2",
  "proc_macro2_diagnostic",
  "quote",
  "syn",
- "try_v2",
+ "try_v2 0.8.2",
 ]
 
 [[package]]
@@ -362,6 +362,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ninja-build_rs"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fce12120dc2a9d140b9b9651a67c1916b82def36df5b2a9ed737f476ed0de2d2"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "ninja-xtask"
 version = "0.2.6"
 dependencies = [
@@ -371,7 +380,7 @@ dependencies = [
  "dircpy",
  "exit_safely",
  "tempfile",
- "try_v2",
+ "try_v2 0.9.0",
 ]
 
 [[package]]
@@ -407,15 +416,15 @@ dependencies = [
 
 [[package]]
 name = "proc_macro2_diagnostic"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a91999c599cf46c7b17a4bce5cfdf2aa8197fd53eef6b1aba0c2849b063a9b0"
+checksum = "06a75b17bb82a6fea207c44a00063d8ad1cd286d8b1fec07de7120506035c2b0"
 dependencies = [
  "autocfg",
- "ninja-build_rs",
+ "ninja-build_rs 0.2.0",
  "proc-macro2",
  "syn",
- "try_v2_traits",
+ "try_v2_traits 0.8.2",
 ]
 
 [[package]]
@@ -531,9 +540,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"
-version = "2.0.117"
+version = "2.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e665b8803e7b1d2a727f4023456bbbbe74da67099c585258af0ad9c5013b9b99"
+checksum = "1b9ae57f904213ebb649ce6895b8a66c66f0203b9319718f69a5612a065b1422"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -560,9 +569,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "821c7f73c490d0d4347cd4d18c941e7cf44387806029a56a1ebb49ece95e4b0b"
 dependencies = [
  "autocfg",
- "ninja-build_rs",
- "try_v2_derive",
- "try_v2_traits",
+ "ninja-build_rs 0.1.2",
+ "try_v2_derive 0.8.2",
+ "try_v2_traits 0.8.2",
+]
+
+[[package]]
+name = "try_v2"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ff8a71f8486d352429ef750901eca992f915e160cdb9af40b0e6a30888cff24"
+dependencies = [
+ "autocfg",
+ "ninja-build_rs 0.2.0",
+ "try_v2_derive 0.9.0",
+ "try_v2_traits 0.9.0",
 ]
 
 [[package]]
@@ -572,7 +593,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b64edd76412d03149a4a4402fbe91a91efde74d47adc93e38be523625c0d8827"
 dependencies = [
  "autocfg",
- "ninja-build_rs",
+ "ninja-build_rs 0.1.2",
+ "proc-macro2",
+ "proc_macro2_diagnostic",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "try_v2_derive"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90423d2aae3e4b11e5b7032cb647ef2775fc40906c7408009b3b4271f071568c"
+dependencies = [
+ "autocfg",
+ "ninja-build_rs 0.2.0",
  "proc-macro2",
  "proc_macro2_diagnostic",
  "quote",
@@ -586,7 +621,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29330520c46c1e1f0d03cef0e64adbb71d57dab06df1cc776a4ab1b4201fff9c"
 dependencies = [
  "autocfg",
- "ninja-build_rs",
+ "ninja-build_rs 0.1.2",
+]
+
+[[package]]
+name = "try_v2_traits"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ab220147388c5172a35f05ea96b9788d5d090d58894863d53476be9ef56b2b5"
+dependencies = [
+ "autocfg",
+ "ninja-build_rs 0.2.0",
 ]
 
 [[package]]
