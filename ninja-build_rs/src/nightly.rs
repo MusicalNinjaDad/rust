@@ -251,8 +251,9 @@ pub fn cargo_unstable() -> Result<bool> {
             "unstable.allow-features=[\"unstable-options\"]",
             "help",
         ])
-        .status()
+        .output()
         .map_err(|err| BuildError::Other(err.to_string()))?
+        .status
         .success())
 }
 
@@ -260,16 +261,20 @@ fn cargo_config<P: AsRef<Path>>(
     current_dir: &Option<P>,
     added_unstable_options: bool,
 ) -> Result<Output> {
-    let mut cargo = Command::new(get_var("CARGO")?);
+    let mut cargo_config_get = Command::new(get_var("CARGO")?);
     if let Some(dir) = &current_dir {
-        cargo.current_dir(dir);
+        cargo_config_get.current_dir(dir);
     }
-    cargo.arg("-Zunstable-options");
+    cargo_config_get.arg("-Zunstable-options");
     if added_unstable_options {
-        cargo.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
+        cargo_config_get.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
     }
-    cargo.args(["config", "get"]);
-    cargo
+    cargo_config_get.args(["config", "get"]);
+
+    // show in `cargo build -vv`
+    dbg!(&cargo_config_get);
+
+    cargo_config_get
         .output()
         .map_err(|err| BuildError::Other(err.to_string()))
 }
@@ -279,17 +284,34 @@ fn cargo_config<P: AsRef<Path>>(
 /// This works fine on any channel and respects whitelists (`unstable.allowed-features`) in all
 /// relevant cargo config.toml files.
 ///
-/// ## Note
+/// ## Note to downstream crates
+///
+/// Due to limitations in the information provided by cargo:
+///
+/// - This will obtain config.toml files based upon `OUT_DIR`. If this is not under the project
+///   root, you can override by providing an alternative path via the environment variable
+///   `NINJA_CARGO_CONFIG_DIR`. See cargo's documentation on config file hierarchical structure
+///   for more details.
 /// - This will not respect additional entries passed at the command line via
 ///   `cargo --config unstable.allow-features=[...]`
 pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
-    _cargo_allowed_features(Option::<std::path::PathBuf>::None)
+    println!("cargo::rerun-if-env-changed=NINJA_CARGO_CONFIG_DIR");
+    let cwd = std::env::var("NINJA_CARGO_CONFIG_DIR")
+        .or_else(|_| std::env::var("OUT_DIR"))
+        .ok();
+    _cargo_allowed_features(cwd)
 }
 
 fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
-        // cargo won't accept `-Z` - so we're on a not-unstable toolchain
-        return Ok(AllowedFeatures(_AllowedFeatures::None));
+        // show in `cargo build -vv`
+        dbg!("cargo won't accept `-Z` - so we're on a not-unstable toolchain");
+
+        let allowed_features = AllowedFeatures(_AllowedFeatures::None);
+
+        // show in `cargo build -vv`
+        dbg!(&allowed_features);
+        return Ok(allowed_features);
     }
 
     let mut added_unstable_options = false;
@@ -310,8 +332,9 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
         }
     };
 
-    let allowed = String::from_utf8_lossy(&output.stdout);
-    let allowed = match allowed
+    let cargo_config = String::from_utf8_lossy(&output.stdout);
+
+    let allowed_features = match cargo_config
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
     {
@@ -346,7 +369,11 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
             }
         }
     };
-    Ok(allowed)
+
+    // show in `cargo build -vv`
+    dbg!(&allowed_features);
+
+    Ok(allowed_features)
 }
 
 /// The set of allowed experimental features for the current build. The only way to create this
