@@ -284,7 +284,7 @@ fn cargo_config<P: AsRef<Path>>(
 /// This works fine on any channel and respects whitelists (`unstable.allowed-features`) in all
 /// relevant cargo config.toml files.
 ///
-/// ## Note
+/// ## Note to downstream crates
 /// 
 /// Due to limitations in the information provided by cargo:
 /// 
