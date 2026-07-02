@@ -326,9 +326,6 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
 
     let cargo_config = String::from_utf8_lossy(&output.stdout);
 
-    // show in `cargo build -vv`
-    dbg!(&cargo_config);
-
     let allowed_features = match cargo_config
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
