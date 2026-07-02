@@ -274,6 +274,9 @@ fn cargo_config<P: AsRef<Path>>(
     let manifest = env!("CARGO_MANIFEST_DIR");
     dbg!(manifest);
 
+    let out_dir = std::env::var("OUT_DIR");
+    dbg!(out_dir);
+
     dbg!("manifest at runtime");
     dbg!(std::env::var("CARGO_MANIFEST_DIR"));
 
