@@ -285,9 +285,9 @@ fn cargo_config<P: AsRef<Path>>(
 /// relevant cargo config.toml files.
 ///
 /// ## Note to downstream crates
-/// 
+///
 /// Due to limitations in the information provided by cargo:
-/// 
+///
 /// - This will obtain config.toml files based upon `OUT_DIR`. If this is not under the project
 ///   root, you can override by providing an alternative path via the environment variable
 ///   `NINJA_CARGO_CONFIG_DIR`. See cargo's documentation on config file hierarchical structure
