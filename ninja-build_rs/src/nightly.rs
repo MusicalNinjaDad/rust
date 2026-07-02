@@ -288,6 +288,7 @@ fn cargo_config<P: AsRef<Path>>(
 /// - This will not respect additional entries passed at the command line via
 ///   `cargo --config unstable.allow-features=[...]`
 pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
+    println!("cargo::rerun-if-env-changed=NINJA_CARGO_CONFIG_DIR");
     let cwd = std::env::var("NINJA_CARGO_CONFIG_DIR")
         .or_else(|_| std::env::var("OUT_DIR"))
         .ok();
