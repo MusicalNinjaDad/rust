@@ -270,8 +270,19 @@ fn cargo_config<P: AsRef<Path>>(
     }
     cargo.args(["config", "get"]);
 
-    dbg!(env!("CARGO_MANIFEST_DIR"));
+    dbg!("manifest at compile time");
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    dbg!(manifest);
+
+    dbg!("manifest at runtime");
+    dbg!(std::env::var("CARGO_MANIFEST_DIR"));
+
+    dbg!("pwd");
     let _ = Command::new("pwd").status();
+
+    dbg!("std::env::current_dir()");
+    dbg!(std::env::current_dir());
+
     dbg!(&cargo);
 
     cargo
