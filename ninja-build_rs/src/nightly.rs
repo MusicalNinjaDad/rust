@@ -270,6 +270,7 @@ fn cargo_config<P: AsRef<Path>>(
     }
     cargo.args(["config", "get"]);
 
+    dbg!(env!("CARGO_MANIFEST_DIR"));
     let _ = Command::new("pwd").status();
     dbg!(&cargo);
 
