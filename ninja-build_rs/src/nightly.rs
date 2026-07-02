@@ -261,19 +261,20 @@ fn cargo_config<P: AsRef<Path>>(
     current_dir: &Option<P>,
     added_unstable_options: bool,
 ) -> Result<Output> {
-    let mut cargo = Command::new(get_var("CARGO")?);
+    let mut cargo_config_get = Command::new(get_var("CARGO")?);
     if let Some(dir) = &current_dir {
-        cargo.current_dir(dir);
+        cargo_config_get.current_dir(dir);
     }
-    cargo.arg("-Zunstable-options");
+    cargo_config_get.arg("-Zunstable-options");
     if added_unstable_options {
-        cargo.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
+        cargo_config_get.args(["--config", "unstable.allow-features=[\"unstable-options\"]"]);
     }
-    cargo.args(["config", "get"]);
+    cargo_config_get.args(["config", "get"]);
 
-    dbg!(&cargo);
+    // show in `cargo build -vv`
+    dbg!(&cargo_config_get);
 
-    cargo
+    cargo_config_get
         .output()
         .map_err(|err| BuildError::Other(err.to_string()))
 }
@@ -295,8 +296,14 @@ pub fn cargo_allowed_features() -> Result<AllowedFeatures> {
 
 fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<AllowedFeatures> {
     if !cargo_unstable()? {
-        // cargo won't accept `-Z` - so we're on a not-unstable toolchain
-        return Ok(AllowedFeatures(_AllowedFeatures::None));
+        // show in `cargo build -vv`
+        dbg!("cargo won't accept `-Z` - so we're on a not-unstable toolchain");
+
+        let allowed_features = AllowedFeatures(_AllowedFeatures::None);
+
+        // show in `cargo build -vv`
+        dbg!(&allowed_features);
+        return Ok(allowed_features);
     }
 
     let mut added_unstable_options = false;
@@ -318,9 +325,11 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
     };
 
     let cargo_config = String::from_utf8_lossy(&output.stdout);
+
+    // show in `cargo build -vv`
     dbg!(&cargo_config);
 
-    let allowed = match cargo_config
+    let allowed_features = match cargo_config
         .lines()
         .find(|line| line.starts_with("unstable.allow-features"))
     {
@@ -355,7 +364,11 @@ fn _cargo_allowed_features<P: AsRef<Path>>(current_dir: Option<P>) -> Result<All
             }
         }
     };
-    Ok(allowed)
+
+    // show in `cargo build -vv`
+    dbg!(&allowed_features);
+
+    Ok(allowed_features)
 }
 
 /// The set of allowed experimental features for the current build. The only way to create this
