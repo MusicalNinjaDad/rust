@@ -1,3 +1,4 @@
+#![expect(clippy::test_attr_in_doctest)]
 //! Checking for experimental or stabilised features is prone to subtle errors which create issues
 //! for downstream users and verbose when done properly. This provides extensions to the amazing
 //! [autocfg::AutoCfg] (re-exported via our prelude to make your life easier) to safely identify the
@@ -10,7 +11,7 @@
 //!
 //! ### `build.rs`
 //!
-//! ```rust, should_panic
+//! ```rust, no_run
 //! use ninja_build_rs::prelude::*;
 //!
 //! fn main() -> Result<()> {
@@ -34,7 +35,7 @@
 //!
 //! ### `lib.rs` / `main.rs`
 //!
-//! ```rust, ignore
+//! ```rust
 //! // only enable unstable feature if it is available and has not yet been stabilised
 //! #![cfg_attr(unstable_assert_matches, feature(assert_matches))]
 //!
