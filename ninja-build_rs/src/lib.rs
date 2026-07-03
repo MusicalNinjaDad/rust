@@ -75,6 +75,10 @@ pub enum BuildError {
     ///
     /// outputs `IOError(error details)` to stderr
     IOError(std::io::Error),
+    /// An error when creating or using [AutoCfg]
+    ///
+    /// outputs `AutoCfgError(error details)`
+    AutoCfgError(autocfg::Error),
     /// Catch-all for any other error
     ///
     /// outputs `Other(some text)` to stderr
@@ -94,7 +98,7 @@ impl BuildError {
 
 impl From<autocfg::Error> for BuildError {
     fn from(e: autocfg::Error) -> Self {
-        BuildError::Other(e.to_string())
+        BuildError::AutoCfgError(e)
     }
 }
 
