@@ -4,7 +4,7 @@
 //! # Usage
 //!
 //! ```rust, no_run
-//! # use std::collections::HashSet;
+//! # use indexmap::IndexSet;
 //! use ninja_build_rs::prelude::*;
 //!
 //! // Result uses BuildError to give meaningful messages
@@ -15,7 +15,7 @@
 //!
 //!     // get values from an environment variable, separated by the
 //!     // OS path separator and re-run build script if it changes.
-//!     let my_vals: HashSet<String> = split_var("MY_VALUES")?;
+//!     let my_vals: IndexSet<String> = split_var("MY_VALUES")?;
 //!     if my_vals.contains("some_value") {
 //!         unimplemented!("do something")
 //!     }
@@ -56,7 +56,9 @@
 //!   effort on your part. All while respecting any `allow-feature` whitelists.
 //!
 
-use std::{collections::HashSet, env::VarError, ffi::OsString};
+use std::{env::VarError, ffi::OsString};
+
+use indexmap::IndexSet;
 
 /// Recommended prelude: `use ninja-build_rs::prelude::*`
 ///
@@ -90,8 +92,8 @@ pub fn get_var(key: &str) -> Result<String> {
 ///
 /// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
 /// - If not found the error returned will include the key name in the debug representation.
-/// - Returns a HashSet which implements `.contains()` but does NOT retain order
-pub fn split_var(key: &str) -> Result<HashSet<String>> {
+/// - Returns an [IndexSet] which implements `.contains()` AND retains ordering
+pub fn split_var(key: &str) -> Result<IndexSet<String>> {
     Ok(std::env::split_paths(&get_var(key)?)
         .map(|p| p.to_string_lossy().to_string())
         .collect())
