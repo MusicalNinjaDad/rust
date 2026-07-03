@@ -632,4 +632,13 @@ use std::assert_matches;
 
         assert_eq!(probes::make_probe(&assert_matches, true, probe), expected);
     }
+
+    #[test]
+    fn unstable_feature_display() {
+        assert_eq!(
+            "foo",
+            format!("{}", UnstableFeature::OtherFeature("foo".to_string()))
+        );
+        assert_eq!("try_trait_v2", format!("{}", UnstableFeature::try_trait_v2))
+    }
 }
