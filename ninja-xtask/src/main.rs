@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use ninja_xtask::{
     Exit,
-    commands::{build, clippy, clippy_tests, fmt, git_add, test},
+    commands::{build, clippy, clippy_tests, fmt, git_add, test, test_examples},
 };
 
 #[derive(Parser)]
@@ -43,11 +43,15 @@ fn main() -> Exit<()> {
         Command::Stage => {
             let fmt = fmt(root);
             Exit::from(fmt)?;
-            let clippy = clippy(root);
-            let clippy_tests = clippy_tests(root);
-            let tests = test(root);
-            let checks = vec![clippy, clippy_tests, tests];
-            Exit::from(checks)?;
+
+            let checks = [
+                clippy(root),
+                clippy_tests(root),
+                test(root),
+                test_examples(root),
+            ];
+            Exit::from_iter(checks)?;
+
             let git = git_add(root);
             Exit::from(git)
         }

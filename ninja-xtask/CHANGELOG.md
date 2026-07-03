@@ -1,5 +1,10 @@
 # Changelog ninja-xtask
 
+## v0.3.0
+
+- **Breaking:** remove `From<Vec<Spawned>> for Exit<()>`, replace with `FromIterator<Spawned> for Exit<()>`
+- Also run `cargo test --examples` as part of `stage`
+
 ## v0.2.6
 
 - show stdout and exit status for failed commands

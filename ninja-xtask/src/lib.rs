@@ -1,6 +1,6 @@
-#![feature(never_type)]
-#![feature(try_trait_v2)]
-#![feature(try_trait_v2_residual)]
+#![cfg_attr(unstable_never_type, feature(never_type))]
+#![cfg_attr(unstable_try_trait_v2, feature(try_trait_v2))]
+#![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]
 
 use std::{
     fmt::Debug,
@@ -9,11 +9,12 @@ use std::{
 };
 
 use exit_safely::Termination;
-use try_v2::{Try, Try_ConvertResult};
+use try_v2::Try;
 
 pub mod commands;
 
-#[derive(Debug, Termination, Try, Try_ConvertResult, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Termination, Try, PartialEq, PartialOrd, Eq, Ord)]
+#[FromResidual(Result<_, Self::Residual>)]
 #[repr(u8)]
 #[must_use]
 pub enum Exit<T: _T> {
@@ -137,8 +138,8 @@ impl SpawnedExt for Result<Child, io::Error> {
     }
 }
 
-impl From<Vec<Spawned>> for Exit<()> {
-    fn from(spawns: Vec<Spawned>) -> Self {
+impl FromIterator<Spawned> for Exit<()> {
+    fn from_iter<I: IntoIterator<Item = Spawned>>(spawns: I) -> Self {
         spawns
             .into_iter()
             .map(|spawn| spawn.wait())
