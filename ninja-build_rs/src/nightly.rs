@@ -93,7 +93,10 @@ use derive_more::Display;
 use crate::{BuildError, Result, get_var};
 use probes::{has, make_probe};
 
-/// Known features with `unstable_...` & `has_...`
+/// Known features with `unstable_...` & `has_...`.
+/// 
+/// If the feature you want is not in this list you can use `Other` to get `unstable_...`
+/// but please also raise a PR (or open an issue) to add a custom probe for `has_...`.
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum UnstableFeature {
