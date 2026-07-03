@@ -8,13 +8,14 @@ use std::{
 };
 
 use autocfg::AutoCfg;
+use derive_more::Display;
 
 use crate::{BuildError, Result, get_var};
 use probes::{has, make_probe};
 
 /// Known features with `unstable_...` & `has_...`
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum UnstableFeature {
     /// Also offers `assert_matches_location=root/module` to identify whether to
     /// `use std::assert_matches`(root) or `use std::assert_matches::assert_matches` (module)
@@ -45,7 +46,9 @@ impl From<&'static str> for UnstableFeature {
 mod probes {
     use autocfg::AutoCfg;
 
-    pub fn make_probe(feature: &str, allowed: bool, probe: &str) -> String {
+use crate::nightly::UnstableFeature;
+
+    pub fn make_probe(feature: UnstableFeature, allowed: bool, probe: &str) -> String {
         let mut _probe = String::with_capacity(256);
         if allowed {
             _probe.push('\n');
@@ -53,7 +56,7 @@ mod probes {
             _probe.push('\n');
 
             _probe.push_str("#![feature(");
-            _probe.push_str(feature);
+            _probe.push_str(&feature.to_string());
             _probe.push_str(")]");
             _probe.push('\n');
         };
@@ -63,7 +66,7 @@ mod probes {
         _probe
     }
 
-    pub fn has(ac: &AutoCfg, feature: &str, allowed: bool, probe: &str) {
+    pub fn has(ac: &AutoCfg, feature: UnstableFeature, allowed: bool, probe: &str) {
         let cfg = format!("has_{feature}");
         autocfg::emit_possibility(&cfg);
         let code = make_probe(feature, allowed, probe);
@@ -158,7 +161,7 @@ pub trait Nightly {
     fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures);
 }
 
-fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
+fn default_unstable_cfg(ac: &AutoCfg, feature: UnstableFeature, allowed: bool) {
     let cfg = format!("unstable_{feature}");
     autocfg::emit_possibility(&cfg);
 
@@ -241,7 +244,7 @@ impl Nightly for AutoCfg {
                     probes::try_trait_v2_residual::AVAILABLE,
                 );
             }
-            UnstableFeature::OtherFeature(feature) => default_unstable_cfg(self, feature, allowed),
+            UnstableFeature::OtherFeature(_) => default_unstable_cfg(self, feature, allowed),
         }
     }
 }
@@ -510,6 +513,6 @@ use std::assert_matches;
 use std::assert_matches;
 "#;
 
-        assert_eq!(probes::make_probe("assert_matches", true, probe), expected);
+        assert_eq!(probes::make_probe(UnstableFeature::assert_matches, true, probe), expected);
     }
 }

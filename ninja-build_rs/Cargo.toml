@@ -14,5 +14,8 @@ license = "MIT"
 [dependencies]
 autocfg = "1.5.1"
 
+derive_more.version = "2.1.1"
+derive_more.features = ["display"]
+
 [dev-dependencies]
 tempfile = "3.27.0"
