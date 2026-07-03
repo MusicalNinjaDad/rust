@@ -75,7 +75,7 @@ pub enum BuildError {
     ///
     /// outputs `IOError(error details)` to stderr
     IOError(std::io::Error),
-    /// An error when creating or using [AutoCfg]
+    /// An error when creating or using [autocfg]
     ///
     /// outputs `AutoCfgError(error details)`
     AutoCfgError(autocfg::Error),
