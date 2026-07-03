@@ -30,4 +30,7 @@ tempfile = "3.27.0"
 
 [build-dependencies]
 autocfg = "1.5.1"
-ninja-build_rs = "0.2.1"
+ninja-build_rs = "0.2.2"
+
+[patch.crates-io]
+ninja-build_rs.path = "../ninja-build_rs"

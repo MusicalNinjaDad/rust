@@ -354,9 +354,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "ninja-build_rs"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "491f61b6bc2e8ff020582967a4e7241869c73bcc6d9d84ae6a7cbcb8228a73e4"
+version = "0.2.2"
 dependencies = [
  "autocfg",
 ]
