@@ -48,7 +48,7 @@ fn main() -> Exit<()> {
             let tests = test(root);
             let test_examples = test_examples(root);
             let checks = vec![clippy, clippy_tests, tests, test_examples];
-            Exit::from(checks)?;
+            Exit::from_iter(checks)?;
             let git = git_add(root);
             Exit::from(git)
         }

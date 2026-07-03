@@ -137,8 +137,8 @@ impl SpawnedExt for Result<Child, io::Error> {
     }
 }
 
-impl From<Vec<Spawned>> for Exit<()> {
-    fn from(spawns: Vec<Spawned>) -> Self {
+impl FromIterator<Spawned> for Exit<()> {
+    fn from_iter<I: IntoIterator<Item = Spawned>>(spawns: I) -> Self {
         spawns
             .into_iter()
             .map(|spawn| spawn.wait())
