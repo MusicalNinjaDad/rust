@@ -1,5 +1,85 @@
-//! Extensions to the amazing [autocfg] designed to help with ergonomically and safely handling
-//! experimental features in nightly.
+//! Checking for experimental or stabilised features is prone to subtle errors which create issues
+//! for downstream users and verbose when done properly. This provides extensions to the amazing
+//! [autocfg] to safely identify the availability of nightly features & handle the future
+//! stabilisation process without additional effort on your part. All while respecting any
+//! `allow-feature` whitelists.
+//!
+//! For a list of known features with dedicated probes see [UnstableFeature]
+//!
+//! ## Usage
+//!
+//! ### `build.rs`
+//!
+//! ```rust
+//! use ninja_build_rs::prelude::*;
+//!
+//! fn main() -> Result<()> {
+//!     // get a new AutoCfg or provide a valuable error
+//!     // rather than panicing
+//!     let ac = AutoCfg::new()?;
+//!
+//!     // check to see if the downstream crate has defined
+//!     // `unstable.allow-features` in `.cargo/config.toml`.
+//!     // It is mandatory to perform this check and pass the
+//!     // result to any calls to `emit_unstable_feature`
+//!     let allowed_features = cargo_allowed_features()?;
+//!
+//!     // We want to make use of `assert_matches` if it is available
+//!     ac.emit_unstable_feature(assert_matches, &allowed_features);
+//!     //                       ^^^^^^^^^^^^^^ - enum variant to avoid typos
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ### `lib.rs` / `main.rs`
+//!
+//! ```rust, ignore
+//! // only enable unstable feature if it is available and has not yet been stabilised
+//! #![cfg_attr(unstable_assert_matches, feature(assert_matches))]
+//!
+//! #[cfg(test)]
+//! // Do these tests if `assert_matches` is available
+//! #[cfg(has_assert_matches)]
+//! mod tests {
+//!     // `assert_matches` was moved in early 2026 before stabilisation
+//!     #[cfg(assert_matches_location = "root")]
+//!     use std::assert_matches;
+//!
+//!     // in earlier nightly compilers `assert_matches` was in a separate module
+//!     #[cfg(assert_matches_location = "module")]
+//!     use std::assert_matches::assert_matches;
+//!
+//!     #[test]
+//!     fn has() {
+//!         assert_matches!(Some(5), Some(n) if n == 5);
+//!     }
+//! }
+//!
+//! #[cfg(test)]
+//! // Do these tests if `assert_matches` is not available
+//! #[cfg(not(has_assert_matches))]
+//! mod tests {
+//!     #[test]
+//!     fn has_not() {
+//!         assert_eq!(Some(5), Some(5));
+//!     }
+//! }
+//! ```
+//!
+//! ## Note to downstream crates
+//!
+//! If you (transiently) depend on a crate which uses `ninja-build_rs` and have implemented a
+//! whitelist of `allowed-features`.
+//!
+//! Due to limitations in the information provided by cargo:
+//!
+//! - This will obtain config.toml files based upon `OUT_DIR`. If this is not under the project
+//!   root, you can override by providing an alternative path via the environment variable
+//!   `NINJA_CARGO_CONFIG_DIR`. See cargo's documentation on config file hierarchical structure
+//!   for more details.
+//! - This will not respect additional entries passed at the command line via
+//!   `cargo --config unstable.allow-features=[...]`
 
 use std::{
     fmt::Debug,
