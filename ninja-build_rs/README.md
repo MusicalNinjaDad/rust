@@ -1,6 +1,6 @@
 # ninja-build_rs
 
-Designed to help create good build scripts, with a focus on ease-of-use of you,
+Designed to help create good build scripts, with a focus on ease of use for you,
 valuable output in `cargo build -vv` & no annoying surprises for anyone downstream.
 
 ## Prelude
