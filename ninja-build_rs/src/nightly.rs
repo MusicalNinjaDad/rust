@@ -362,6 +362,8 @@ impl Nightly for AutoCfg {
     }
 }
 
+/// Check whether cargo will accept unstable flags. You probably never need to run this
+/// yourself and should prefer to simply call [`cargo_allowed_features`].
 pub fn cargo_unstable() -> Result<bool> {
     Ok(Command::new(get_var("CARGO")?)
         .args([
@@ -514,6 +516,7 @@ impl AllowedFeatures {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// private to make it impossible to manually construct an [AllowedFeatures] from outside this crate
 enum _AllowedFeatures {
     None,
     All,
