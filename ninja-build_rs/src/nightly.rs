@@ -1,6 +1,6 @@
 //! Checking for experimental or stabilised features is prone to subtle errors which create issues
 //! for downstream users and verbose when done properly. This provides extensions to the amazing
-//! [autocfg] (re-exported via our prelude to make your life easier) to safely identify the
+//! [autocfg::AutoCfg] (re-exported via our prelude to make your life easier) to safely identify the
 //! availability of nightly features & handle the future stabilisation process without additional
 //! effort on your part. All while respecting any `allow-feature` whitelists.
 //!
