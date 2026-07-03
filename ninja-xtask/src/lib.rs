@@ -9,11 +9,12 @@ use std::{
 };
 
 use exit_safely::Termination;
-use try_v2::{Try, Try_ConvertResult};
+use try_v2::Try;
 
 pub mod commands;
 
-#[derive(Debug, Termination, Try, Try_ConvertResult, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Termination, Try, PartialEq, PartialOrd, Eq, Ord)]
+#[FromResidual(Result<_, Self::Residual>)]
 #[repr(u8)]
 #[must_use]
 pub enum Exit<T: _T> {
