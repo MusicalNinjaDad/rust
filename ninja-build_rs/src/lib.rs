@@ -21,13 +21,22 @@ use std::{collections::HashSet, env::VarError, ffi::OsString};
 
 pub mod nightly;
 
-/// Prelude to allow `use ninja-build_rs::prelude::*`
+/// Recommended prelude: `use ninja-build_rs::prelude::*`
+///
+/// - A [`Result`] alias & [`BuildError`] type that gives meaningful output from `main() -> Result<()>`.
+/// - [`get_var()`] & [`split_var()`] which automatically register `cargo::rerun-if-env-changed`
+///   and include the variable name in any errors.
+/// - [`emit_unstable_feature()`](nightly::Nightly::emit_unstable_feature),
+///   [`cargo_allowed_features`](nightly::cargo_allowed_features) &
+///   enum [`UnstableFeature`](nightly::UnstableFeature) to provide a safe way to identify the
+///   availability of nightly features & handle the future stabilisation process without additional
+///   effort on your part. All while respecting any `allow-feature` whitelists.
 pub mod prelude {
     pub use crate::nightly::{Nightly, UnstableFeature::*, cargo_allowed_features};
     pub use crate::{Result, get_var, split_var};
 }
 
-/// Result type wrapping [BuildError]. Returning this from `main` in a build script will
+/// Result type wrapping [BuildError]. Using `main() -> Result<()>` in `build.rs` will
 /// provide useful information in the debug representation sent to stderr on failure.
 pub type Result<T> = std::result::Result<T, BuildError>;
 
@@ -53,9 +62,21 @@ pub fn split_var(key: &str) -> Result<HashSet<String>> {
 /// An error designed to have nice debug representations for common errors encountered
 /// in build.rs
 pub enum BuildError {
+    /// If an environment variable was requested but not set
+    ///
+    /// outputs `VarNotSet("KEY")` to stderr
     VarNotSet(OsString),
+    /// If an environment variable contains non-unicode characters
+    ///
+    /// outputs `VarInvalid("KEY", "contents")` to stderr
     VarInvalid(OsString, OsString),
+    /// An IO Error occurred
+    ///
+    /// outputs `IOError(error details)` to stderr
     IOError(std::io::Error),
+    /// Catch-all for any other error
+    ///
+    /// outputs `Other(some text)` to stderr
     Other(String),
 }
 
@@ -110,6 +131,7 @@ mod tests {
     fn missing_env_var() {
         let random_key = "019de8d0-bb66-769d-9d4d-fec48aebdd49";
         let err = get_var(random_key);
+        dbg!(&err);
         assert!(err.is_err());
         assert!(format!("{err:?}").contains(random_key));
     }
