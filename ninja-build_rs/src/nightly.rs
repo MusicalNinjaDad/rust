@@ -10,7 +10,8 @@
 //!
 //! ### `build.rs`
 //!
-//! ```rust
+//! ```rust, ignore
+//! # use autocfg::AutoCfg;
 //! use ninja_build_rs::prelude::*;
 //!
 //! fn main() -> Result<()> {
@@ -94,7 +95,7 @@ use crate::{BuildError, Result, get_var};
 use probes::{has, make_probe};
 
 /// Known features with `unstable_...` & `has_...`.
-/// 
+///
 /// If the feature you want is not in this list you can use `Other` to get `unstable_...`
 /// but please also raise a PR (or open an issue) to add a custom probe for `has_...`.
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
@@ -136,7 +137,8 @@ pub enum UnstableFeature {
     OtherFeature(String),
 }
 
-impl From<&str> for UnstableFeature {
+impl UnstableFeature {
+    // This is not pub or trait From to avoid risk of typos
     fn from(feature: &str) -> Self {
         match feature {
             "assert_matches" => Self::assert_matches,
