@@ -9,7 +9,7 @@
 //!
 //! ## Usage
 //!
-//! ### `build.rs`
+//! ### In `build.rs`
 //!
 //! ```rust, no_run
 //! use ninja_build_rs::prelude::*;
@@ -33,7 +33,7 @@
 //! }
 //! ```
 //!
-//! ### `lib.rs` / `main.rs`
+//! ### In `lib.rs` / `main.rs`
 //!
 //! ```rust
 //! // only enable unstable feature if it is available and has not yet been stabilised
