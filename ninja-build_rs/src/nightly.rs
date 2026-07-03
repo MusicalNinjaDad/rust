@@ -2,6 +2,7 @@
 //! experimental features in nightly.
 
 use std::{
+    fmt::Debug,
     path::Path,
     process::{Command, Output},
 };
@@ -154,7 +155,7 @@ pub trait Nightly {
     ///
     /// If you need to test that a feature is available in order to cfg-gate your code and it is not
     /// on the list of [known features](UnstableFeature), please raise a PR with a suggested probe.
-    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures);
+    fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures);
 }
 
 fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
@@ -177,8 +178,10 @@ fn default_unstable_cfg(ac: &AutoCfg, feature: &'static str, allowed: bool) {
 }
 
 impl Nightly for AutoCfg {
-    fn emit_unstable_feature(&self, feature: &'static str, allowed_features: &AllowedFeatures) {
+    fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures) {
+        // show in `cargo build -vv`
         dbg!(&feature);
+
         let ac = self;
         let allowed = allowed_features.includes(feature);
         match UnstableFeature::from(feature) {
