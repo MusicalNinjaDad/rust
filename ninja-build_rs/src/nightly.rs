@@ -91,7 +91,7 @@ pub use autocfg::AutoCfg;
 use derive_more::Display;
 
 use crate::{BuildError, Result, get_var};
-use probes::{has, make_probe};
+use probes::{has, make_probe, unstable};
 
 /// Known features with `unstable_...` & `has_...`.
 ///
@@ -152,10 +152,12 @@ impl UnstableFeature {
 }
 
 mod probes {
-    use autocfg::AutoCfg;
+    use super::{AutoCfg, UnstableFeature};
 
-    use crate::nightly::UnstableFeature;
-
+    /// Prefix with:
+    /// - #![allow(stable_features)] (only if allowed)
+    /// - #![feature()] (only if allowed)
+    /// - #![allow(unused)] (always)
     pub fn make_probe(feature: &UnstableFeature, allowed: bool, probe: &str) -> String {
         let mut _probe = String::with_capacity(256);
         if allowed {
@@ -174,6 +176,7 @@ mod probes {
         _probe
     }
 
+    /// Register `#[cfg(has_feature)]` & set based on the probe
     pub fn has(ac: &AutoCfg, feature: &UnstableFeature, allowed: bool, probe: &str) {
         let cfg = format!("has_{feature}");
         autocfg::emit_possibility(&cfg);
@@ -183,8 +186,27 @@ mod probes {
         }
     }
 
-    pub mod assert_matches {
+    /// Register `#[cfg(has_feature)]` & run a default probe
+    pub fn unstable(ac: &AutoCfg, feature: &UnstableFeature, allowed: bool) {
+        let cfg = format!("unstable_{feature}");
+        autocfg::emit_possibility(&cfg);
 
+        if allowed {
+            let code = format!(
+                r#"
+#![deny(stable_features)]
+#![feature({feature})]
+#![allow(unused)]
+"#
+            );
+
+            if ac.probe_raw(&code).is_ok() {
+                autocfg::emit(&cfg);
+            }
+        }
+    }
+
+    pub mod assert_matches {
         pub const AVAILABLE: &str = r#"
 use std::assert_matches;
 "#;
@@ -195,7 +217,6 @@ fn main() {
     assert_matches!(Some(4), Some(_));
 }
 "#;
-
         // was stabilised in root - so no need to remove feature from this probe
         pub const MODULE: &str = r#"
 #![allow(stable_features)]
@@ -207,6 +228,7 @@ fn main() {
 }
 "#;
     }
+
     pub mod iterator_try_collect {
         // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
         pub const AVAILABLE: &str = r#"
@@ -215,19 +237,21 @@ fn try_collect() {
 }
 "#;
     }
+
     pub mod never_type {
         pub const AVAILABLE: &str = r#"
 type Bang = !;
 "#;
     }
+
     pub mod proc_macro_diagnostic {
+        /// Special probe as feature only available in proc_macro context
         pub const UNSTABLE: &str = r#"
 #![deny(stable_features)]
 #![feature(proc_macro_diagnostic)]
 #![allow(unused)]
 extern crate proc_macro;
 "#;
-
         pub const AVAILABLE: &str = r#"
 extern crate proc_macro;
 use proc_macro::Diagnostic;      
@@ -269,25 +293,6 @@ pub trait Nightly {
     fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures);
 }
 
-fn default_unstable_cfg(ac: &AutoCfg, feature: &UnstableFeature, allowed: bool) {
-    let cfg = format!("unstable_{feature}");
-    autocfg::emit_possibility(&cfg);
-
-    if allowed {
-        let code = format!(
-            r#"
-#![deny(stable_features)]
-#![feature({feature})]
-#![allow(unused)]
-"#
-        );
-
-        if ac.probe_raw(&code).is_ok() {
-            autocfg::emit(&cfg);
-        }
-    }
-}
-
 impl Nightly for AutoCfg {
     fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures) {
         // show in `cargo build -vv`
@@ -297,7 +302,7 @@ impl Nightly for AutoCfg {
         let allowed = allowed_features.includes(&feature);
         match feature {
             UnstableFeature::assert_matches => {
-                default_unstable_cfg(self, &feature, allowed);
+                unstable(self, &feature, allowed);
                 has(ac, &feature, allowed, probes::assert_matches::AVAILABLE);
                 autocfg::emit_possibility("assert_matches_location, values(\"root\", \"module\")");
                 if self
@@ -311,7 +316,7 @@ impl Nightly for AutoCfg {
                 }
             }
             UnstableFeature::iterator_try_collect => {
-                default_unstable_cfg(self, &feature, allowed);
+                unstable(self, &feature, allowed);
                 has(
                     ac,
                     &feature,
@@ -320,7 +325,7 @@ impl Nightly for AutoCfg {
                 );
             }
             UnstableFeature::never_type => {
-                default_unstable_cfg(self, &feature, allowed);
+                unstable(self, &feature, allowed);
                 has(ac, &feature, allowed, probes::never_type::AVAILABLE);
             }
             UnstableFeature::proc_macro_diagnostic => {
@@ -340,11 +345,11 @@ impl Nightly for AutoCfg {
                 );
             }
             UnstableFeature::try_trait_v2 => {
-                default_unstable_cfg(self, &feature, allowed);
+                unstable(self, &feature, allowed);
                 has(ac, &feature, allowed, probes::try_trait_v2::AVAILABLE);
             }
             UnstableFeature::try_trait_v2_residual => {
-                default_unstable_cfg(self, &feature, allowed);
+                unstable(self, &feature, allowed);
                 has(
                     ac,
                     &feature,
@@ -352,7 +357,7 @@ impl Nightly for AutoCfg {
                     probes::try_trait_v2_residual::AVAILABLE,
                 );
             }
-            UnstableFeature::OtherFeature(_) => default_unstable_cfg(self, &feature, allowed),
+            UnstableFeature::OtherFeature(_) => unstable(self, &feature, allowed),
         }
     }
 }
