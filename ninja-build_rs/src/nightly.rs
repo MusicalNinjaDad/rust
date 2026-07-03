@@ -18,34 +18,36 @@ use probes::{has, make_probe};
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum UnstableFeature {
     /// ### Provides cfg flags:
-    /// - `unstable_assert_matches`
-    /// - `has_assert_matches`
+    /// - `#![cfg_attr(unstable_assert_matches, feature(assert_matches))]`
+    /// - `#[cfg(has_assert_matches)]`
     /// - ```rust, ignore
     ///   #[cfg(assert_matches_location = "root")]
     ///   use std::assert_matches;
+    ///   ```
+    /// - ```rust, ignore
     ///   #[cfg(assert_matches_location = "module")]
     ///   use std::assert_matches::assert_matches;
     ///   ```
     assert_matches,
     /// ### Provides cfg flags:
-    /// - `unstable_iterator_try_collect`
-    /// - `has_iterator_try_collect`
+    /// - `#![cfg_attr(unstable_iterator_try_collect, feature(iterator_try_collect))]`
+    /// - `#[cfg(has_iterator_try_collect)]`
     iterator_try_collect,
     /// ### Provides cfg flags:
-    /// - `unstable_never_type`
-    /// - `has_never_type`
+    /// - `#![cfg_attr(unstable_never_type, feature(never_type))]`
+    /// - `#[cfg(has_never_type)]`
     never_type,
     /// ### Provides cfg flags:
-    /// - `unstable_proc_macro_diagnostic`
-    /// - `has_proc_macro_diagnostic`
+    /// - `#![cfg_attr(unstable_proc_macro_diagnostic, feature(proc_macro_diagnostic))]`
+    /// - `#[cfg(has_proc_macro_diagnostic)]`
     proc_macro_diagnostic,
     /// ### Provides cfg flags:
-    /// - `unstable_try_trait_v2`
-    /// - `has_try_trait_v2`
+    /// - `#![cfg_attr(unstable_try_trait_v2, feature(try_trait_v2))]`
+    /// - `#[cfg(has_try_trait_v2)]`
     try_trait_v2,
     /// ### Provides cfg flags:
-    /// - `unstable_try_trait_v2_residual`
-    /// - `has_try_trait_v2_residual`
+    /// - `#![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]`
+    /// - `#[cfg(has_try_trait_v2_residual)]`
     try_trait_v2_residual,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
     OtherFeature(String),
