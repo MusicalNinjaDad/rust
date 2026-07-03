@@ -81,7 +81,7 @@ pub enum BuildError {
 }
 
 impl BuildError {
-    /// Ensure that the key name is included in the error returned.
+    /// Create a `BuildError` from a `VarError` for a given key.
     /// You probably won't need this often and can use [get_var] for most cases.
     pub fn from_var_error(key: &str, err: VarError) -> BuildError {
         match err {
@@ -104,12 +104,13 @@ impl From<std::io::Error> for BuildError {
 }
 
 /// Generate your own with `Err("some text")`
-impl From<&'static str> for BuildError {
-    fn from(msg: &'static str) -> Self {
+impl From<&str> for BuildError {
+    fn from(msg: &str) -> Self {
         msg.to_string().into()
     }
 }
 
+/// Generate your own with `Err(String)`
 impl From<String> for BuildError {
     fn from(msg: String) -> Self {
         BuildError::Other(msg)
