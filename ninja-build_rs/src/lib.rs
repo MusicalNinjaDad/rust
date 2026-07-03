@@ -30,7 +30,7 @@ use std::{collections::HashSet, env::VarError, ffi::OsString};
 ///   availability of nightly features & handle the future stabilisation process without additional
 ///   effort on your part. All while respecting any `allow-feature` whitelists.
 pub mod prelude {
-    pub use crate::nightly::{Nightly, UnstableFeature::*, cargo_allowed_features};
+    pub use crate::nightly::{AutoCfg, Nightly, UnstableFeature::*, cargo_allowed_features};
     pub use crate::{Result, get_var, split_var};
 }
 

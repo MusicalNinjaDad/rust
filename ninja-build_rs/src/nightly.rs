@@ -10,8 +10,7 @@
 //!
 //! ### `build.rs`
 //!
-//! ```rust, ignore
-//! # use autocfg::AutoCfg;
+//! ```rust, should_panic
 //! use ninja_build_rs::prelude::*;
 //!
 //! fn main() -> Result<()> {
@@ -88,7 +87,7 @@ use std::{
     process::{Command, Output},
 };
 
-use autocfg::AutoCfg;
+pub use autocfg::AutoCfg;
 use derive_more::Display;
 
 use crate::{BuildError, Result, get_var};
