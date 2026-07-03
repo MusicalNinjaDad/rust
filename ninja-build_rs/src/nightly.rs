@@ -24,7 +24,7 @@ pub enum UnstableFeature {
     try_trait_v2,
     try_trait_v2_residual,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
-    Other(&'static str),
+    OtherFeature(&'static str),
 }
 
 impl From<&'static str> for UnstableFeature {
@@ -36,7 +36,7 @@ impl From<&'static str> for UnstableFeature {
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
             "try_trait_v2_residual" => Self::try_trait_v2_residual,
-            _ => Self::Other(feature),
+            _ => Self::OtherFeature(feature),
         }
     }
 }
@@ -238,7 +238,7 @@ impl Nightly for AutoCfg {
                     probes::try_trait_v2_residual::AVAILABLE,
                 );
             }
-            UnstableFeature::Other(feature) => default_unstable_cfg(self, feature, allowed),
+            UnstableFeature::OtherFeature(feature) => default_unstable_cfg(self, feature, allowed),
         }
     }
 }
