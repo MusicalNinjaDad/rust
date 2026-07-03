@@ -53,6 +53,17 @@ pub fn test(root: &Path) -> Spawned {
         .into_spawned("tests")
 }
 
+pub fn test_examples(root: &Path) -> Spawned {
+    Command::new("cargo")
+        .current_dir(root)
+        .arg("test")
+        .arg("--examples")
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .into_spawned("test examples")
+}
+
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
 /// specified) optionally performing a release build (default is cargo's default profile).
 ///
