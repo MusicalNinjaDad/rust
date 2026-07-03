@@ -13,7 +13,7 @@ use probes::{has, make_probe};
 
 /// Known features with `unstable_...` & `has_...`
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnstableFeature {
     /// Also offers `assert_matches_location=root/module` to identify whether to
     /// `use std::assert_matches`(root) or `use std::assert_matches::assert_matches` (module)
@@ -24,7 +24,7 @@ pub enum UnstableFeature {
     try_trait_v2,
     try_trait_v2_residual,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
-    OtherFeature(&'static str),
+    OtherFeature(String),
 }
 
 impl From<&'static str> for UnstableFeature {
@@ -36,7 +36,7 @@ impl From<&'static str> for UnstableFeature {
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
             "try_trait_v2_residual" => Self::try_trait_v2_residual,
-            _ => Self::OtherFeature(feature),
+            _ => Self::OtherFeature(feature.to_string()),
         }
     }
 }
