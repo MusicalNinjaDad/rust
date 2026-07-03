@@ -75,7 +75,8 @@ pub mod prelude {
 
 pub mod nightly;
 
-/// Attempt to get an environment variable.
+/// Attempt to get an environment variable, re-run build if it changes or provide a meaningful
+/// error if missing.
 ///
 /// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
 /// - If not found the error returned will include the key name in the debug representation.
@@ -84,10 +85,12 @@ pub fn get_var(key: &str) -> Result<String> {
     std::env::var(key).map_err(|err| BuildError::from_var_error(key, err))
 }
 
-/// Attempt to get an environment variable and split the values using the OS path separator.
+/// Attempt to get an environment variable and split the values using the OS path separator,
+/// re-run build if it changes or provide a meaningful error if missing.
 ///
 /// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
 /// - If not found the error returned will include the key name in the debug representation.
+/// - Returns a HashSet which implements `.contains()` but does NOT retain order
 pub fn split_var(key: &str) -> Result<HashSet<String>> {
     Ok(std::env::split_paths(&get_var(key)?)
         .map(|p| p.to_string_lossy().to_string())
