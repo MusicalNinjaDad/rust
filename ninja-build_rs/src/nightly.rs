@@ -88,6 +88,8 @@ use std::{
     process::{Command, Output},
 };
 
+/// re-exported from autocfg
+///
 pub use autocfg::AutoCfg;
 use derive_more::Display;
 
