@@ -17,8 +17,15 @@ use probes::{has, make_probe};
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum UnstableFeature {
-    /// Also offers `assert_matches_location=root/module` to identify whether to
-    /// `use std::assert_matches`(root) or `use std::assert_matches::assert_matches` (module)
+    /// ### Provides cfg flags:
+    /// - `unstable_assert_matches`
+    /// - `has_assert_matches`
+    /// - ```rust, ignore
+    ///   #[cfg(assert_matches_location = "root")]
+    ///   use std::assert_matches;
+    ///   #[cfg(assert_matches_location = "module")]
+    ///   use std::assert_matches::assert_matches;
+    ///   ```
     assert_matches,
     iterator_try_collect,
     never_type,
