@@ -1,7 +1,4 @@
-use ninja_build_rs::{
-    Result,
-    nightly::{Nightly, cargo_allowed_features},
-};
+use ninja_build_rs::prelude::*;
 
 fn main() -> Result<()> {
     let allowed_features = cargo_allowed_features()?;

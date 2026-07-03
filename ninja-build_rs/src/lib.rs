@@ -6,6 +6,12 @@ use std::{collections::HashSet, env::VarError, ffi::OsString};
 
 pub mod nightly;
 
+/// Prelude to allow `use ninja-build_rs::prelude::*`
+pub mod prelude {
+    pub use crate::nightly::{Nightly, UnstableFeature::*, cargo_allowed_features};
+    pub use crate::{Result, get_var, split_var};
+}
+
 /// Result type wrapping [BuildError]. Returning this from `main` in a build script will
 /// provide useful information in the debug representation sent to stderr on failure.
 pub type Result<T> = std::result::Result<T, BuildError>;
