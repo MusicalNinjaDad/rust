@@ -1,6 +1,6 @@
 [package]
 name = "ninja-build_rs"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2024"
 readme = "README.md"
 description = "build script helpers for working with nightly"
@@ -13,9 +13,9 @@ license = "MIT"
 
 [dependencies]
 autocfg = "1.5.1"
-
 derive_more.version = "2.1.1"
 derive_more.features = ["display"]
+indexmap = "2.14.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"

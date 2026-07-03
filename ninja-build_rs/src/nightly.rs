@@ -1,3 +1,4 @@
+#![expect(clippy::test_attr_in_doctest)]
 //! Checking for experimental or stabilised features is prone to subtle errors which create issues
 //! for downstream users and verbose when done properly. This provides extensions to the amazing
 //! [autocfg::AutoCfg] (re-exported via our prelude to make your life easier) to safely identify the
@@ -6,11 +7,11 @@
 //!
 //! For a list of known features with dedicated probes see [UnstableFeature]
 //!
-//! ## Usage
+//! # Usage
 //!
-//! ### `build.rs`
+//! ## In `build.rs`
 //!
-//! ```rust, should_panic
+//! ```rust, no_run
 //! use ninja_build_rs::prelude::*;
 //!
 //! fn main() -> Result<()> {
@@ -32,9 +33,9 @@
 //! }
 //! ```
 //!
-//! ### `lib.rs` / `main.rs`
+//! ## In `lib.rs` / `main.rs`
 //!
-//! ```rust, ignore
+//! ```rust
 //! // only enable unstable feature if it is available and has not yet been stabilised
 //! #![cfg_attr(unstable_assert_matches, feature(assert_matches))]
 //!
@@ -67,7 +68,7 @@
 //! }
 //! ```
 //!
-//! ## Note to downstream crates
+//! # Note to downstream crates
 //!
 //! If you (transiently) depend on a crate which uses `ninja-build_rs` and have implemented a
 //! whitelist of `allowed-features`.
@@ -87,20 +88,22 @@ use std::{
     process::{Command, Output},
 };
 
+/// re-exported from autocfg
+///
 pub use autocfg::AutoCfg;
 use derive_more::Display;
 
 use crate::{BuildError, Result, get_var};
 use probes::{has, make_probe, unstable};
 
-/// Known features with `unstable_...` & `has_...`.
+/// Known features with `unstable_...` & dedicated probes for `has_...`.
 ///
 /// If the feature you want is not in this list you can use `Other` to get `unstable_...`
 /// but please also raise a PR (or open an issue) to add a custom probe for `has_...`.
 #[allow(non_camel_case_types, reason = "shadowing feature naming")]
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum UnstableFeature {
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_assert_matches, feature(assert_matches))]`
     /// - `#[cfg(has_assert_matches)]`
     /// - ```rust, ignore
@@ -112,23 +115,23 @@ pub enum UnstableFeature {
     ///   use std::assert_matches::assert_matches;
     ///   ```
     assert_matches,
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_iterator_try_collect, feature(iterator_try_collect))]`
     /// - `#[cfg(has_iterator_try_collect)]`
     iterator_try_collect,
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_never_type, feature(never_type))]`
     /// - `#[cfg(has_never_type)]`
     never_type,
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_proc_macro_diagnostic, feature(proc_macro_diagnostic))]`
     /// - `#[cfg(has_proc_macro_diagnostic)]`
     proc_macro_diagnostic,
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_try_trait_v2, feature(try_trait_v2))]`
     /// - `#[cfg(has_try_trait_v2)]`
     try_trait_v2,
-    /// ### Provides cfg flags:
+    /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]`
     /// - `#[cfg(has_try_trait_v2_residual)]`
     try_trait_v2_residual,
@@ -271,25 +274,28 @@ use std::ops::Residual;
     }
 }
 
+/// Adds [`AutoCfg::emit_unstable_feature`](Nightly::emit_unstable_feature)
 pub trait Nightly {
     /// Offers at least 2 cfg flags for all [known features](UnstableFeature)
     ///
-    /// You must pass a set of [AllowedFeatures], created by calling [cargo_allowed_features]
+    /// # Feature enablement: `cfg(unstable_...)`
     ///
-    /// ## cfg `unstable_...`
     /// - To be used at top-level crate via `#![cfg_attr(unstable_foo, feature(foo))]`
     ///
-    /// ## Cfg-gating `has_...`
-    /// Do **not** rely on `cfg(not(unstable_foo))` to suggest that `feature(foo)` is stable! There
-    /// are 3 reasons that `cfg(unstable_foo)` could be `false`:
-    ///   1. The build is using `stable`/`beta` or the feature is not on the `allow-features` whitelist
-    ///   2. The feature has been stabilised
-    ///   3. The compiler is from before the feature was implemented
+    /// # Cfg-gating: `cfg(has_...)`
     ///
-    /// All [known features](UnstableFeature) have a `has_...` cfg for this purpose.
+    /// - **Do not rely on `#[cfg(not(unstable_foo))]` to suggest that `feature(foo)` is stable!**
+    /// - There are 3 reasons that `#[cfg(unstable_foo)]` could be `false`:
+    ///     1. The build is using `stable`/`beta` or the feature is not on the `allow-features` whitelist
+    ///     2. The feature has been stabilised
+    ///     3. The compiler is from before the feature was implemented
+    /// - All [known features](UnstableFeature) have a `#[cfg(has_...)]` for this purpose.
     ///
-    /// If you need to test that a feature is available in order to cfg-gate your code and it is not
-    /// on the list of [known features](UnstableFeature), please raise a PR with a suggested probe.
+    /// # Note
+    ///
+    /// - You must pass a set of [AllowedFeatures], created by calling [cargo_allowed_features]
+    /// - If you need to test that a feature is available in order to cfg-gate your code and it is not
+    ///   on the list of [known features](UnstableFeature), please raise a PR with a suggested probe.
     fn emit_unstable_feature(&self, feature: UnstableFeature, allowed_features: &AllowedFeatures);
 }
 
