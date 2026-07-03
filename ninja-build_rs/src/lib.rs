@@ -19,8 +19,6 @@
 //!   effort on your part. All while respecting any `allow-feature` whitelists.
 use std::{collections::HashSet, env::VarError, ffi::OsString};
 
-pub mod nightly;
-
 /// Recommended prelude: `use ninja-build_rs::prelude::*`
 ///
 /// - A [`Result`] alias & [`BuildError`] type that gives meaningful output from `main() -> Result<()>`.
@@ -36,9 +34,7 @@ pub mod prelude {
     pub use crate::{Result, get_var, split_var};
 }
 
-/// Result type wrapping [BuildError]. Using `main() -> Result<()>` in `build.rs` will
-/// provide useful information in the debug representation sent to stderr on failure.
-pub type Result<T> = std::result::Result<T, BuildError>;
+pub mod nightly;
 
 /// Attempt to get an environment variable.
 ///
@@ -48,6 +44,7 @@ pub fn get_var(key: &str) -> Result<String> {
     println!("cargo::rerun-if-env-changed={key}");
     std::env::var(key).map_err(|err| BuildError::from_var_error(key, err))
 }
+
 /// Attempt to get an environment variable and split the values using the OS path separator.
 ///
 /// - Emits `cargo::rerun-if-env-changed=key` to ensure changes trigger a rebuild.
@@ -57,6 +54,10 @@ pub fn split_var(key: &str) -> Result<HashSet<String>> {
         .map(|p| p.to_string_lossy().to_string())
         .collect())
 }
+
+/// Result type wrapping [BuildError]. Using `main() -> Result<()>` in `build.rs` will
+/// provide useful information in the debug representation sent to stderr on failure.
+pub type Result<T> = std::result::Result<T, BuildError>;
 
 #[derive(Debug)]
 /// An error designed to have nice debug representations for common errors encountered
