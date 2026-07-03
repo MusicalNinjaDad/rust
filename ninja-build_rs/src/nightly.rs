@@ -280,9 +280,9 @@ pub trait Nightly {
     /// - To be used at top-level crate via `#![cfg_attr(unstable_foo, feature(foo))]`
     ///
     /// ## Cfg-gating `has_...`
-    /// Do **not** rely on `cfg(not(unstable_foo))` to suggest that `feature(foo)` is stable! There are 3
-    /// reasons that `cfg(unstable_foo)` could be `false`:
-    ///   1. The build is using `stable`/`beta`
+    /// Do **not** rely on `cfg(not(unstable_foo))` to suggest that `feature(foo)` is stable! There
+    /// are 3 reasons that `cfg(unstable_foo)` could be `false`:
+    ///   1. The build is using `stable`/`beta` or the feature is not on the `allow-features` whitelist
     ///   2. The feature has been stabilised
     ///   3. The compiler is from before the feature was implemented
     ///
