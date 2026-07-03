@@ -43,6 +43,7 @@ fn main() -> Exit<()> {
         Command::Stage => {
             let fmt = fmt(root);
             Exit::from(fmt)?;
+
             let checks = [
                 clippy(root),
                 clippy_tests(root),
@@ -50,6 +51,7 @@ fn main() -> Exit<()> {
                 test_examples(root),
             ];
             Exit::from_iter(checks)?;
+
             let git = git_add(root);
             Exit::from(git)
         }
