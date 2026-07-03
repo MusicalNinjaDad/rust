@@ -3,6 +3,7 @@ name = "ninja-build_rs-assert_matches_fixture"
 edition = "2024"
 version = "0.0.0"
 publish = false
+rust-version = "1.85.1"
 
 [lib]
 

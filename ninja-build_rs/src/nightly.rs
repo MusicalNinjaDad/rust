@@ -115,6 +115,11 @@ pub enum UnstableFeature {
     ///   use std::assert_matches::assert_matches;
     ///   ```
     assert_matches,
+    /// ## Provides cfg flags for feature [`can_vector`](https://github.com/rust-lang/rust/issues/69941)
+    /// - `#![cfg_attr(unstable_can_vector, feature(can_vector))]`
+    /// - `#[cfg(has_can_vector)]`
+    /// - this gates [`std::io::Read::is_read_vectored`] & [`std::io::Write::is_write_vectored`]
+    can_vector,
     /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_iterator_try_collect, feature(iterator_try_collect))]`
     /// - `#[cfg(has_iterator_try_collect)]`
@@ -135,6 +140,11 @@ pub enum UnstableFeature {
     /// - `#![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]`
     /// - `#[cfg(has_try_trait_v2_residual)]`
     try_trait_v2_residual,
+    /// ## Provides cfg flags for feature [`write_all_vectored`](https://github.com/rust-lang/rust/issues/70436)
+    /// - `#![cfg_attr(unstable_write_all_vectored, feature(write_all_vectored))]`
+    /// - `#[cfg(has_write_all_vectored)]`
+    /// - this gates [`std::io::Write::write_all_vectored`]
+    write_all_vectored,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
     OtherFeature(String),
 }
@@ -144,11 +154,13 @@ impl UnstableFeature {
     fn from(feature: &str) -> Self {
         match feature {
             "assert_matches" => Self::assert_matches,
+            "can_vector" => Self::can_vector,
             "iterator_try_collect" => Self::iterator_try_collect,
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
             "try_trait_v2_residual" => Self::try_trait_v2_residual,
+            "write_all_vectored" => Self::write_all_vectored,
             _ => Self::OtherFeature(feature.to_string()),
         }
     }
@@ -232,6 +244,15 @@ fn main() {
 "#;
     }
 
+    pub mod can_vector {
+        pub const AVAILABLE: &str = r#"
+use std::io::Read;
+fn main() {
+    std::io::empty().is_read_vectored();
+}
+"#;
+    }
+
     pub mod iterator_try_collect {
         // vec! not array: https://internals.rust-lang.org/t/code-compiles-on-playground-but-fails-when-passed-via-stdin-to-rustc/24393
         pub const AVAILABLE: &str = r#"
@@ -270,6 +291,17 @@ use std::ops::Try;
     pub mod try_trait_v2_residual {
         pub const AVAILABLE: &str = r#"
 use std::ops::Residual;
+"#;
+    }
+
+    pub mod write_all_vectored {
+        pub const AVAILABLE: &str = r#"
+use std::io::{empty, Write, IoSlice};
+fn main() {
+    let buf: [u8;_] = [0];
+    let slice = IoSlice::new(&buf);
+    empty().write_all_vectored(&mut [slice]);
+}
 "#;
     }
 }
@@ -321,6 +353,10 @@ impl Nightly for AutoCfg {
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
             }
+            UnstableFeature::can_vector => {
+                unstable(ac, &feature, allowed);
+                has(ac, &feature, allowed, probes::can_vector::AVAILABLE);
+            }
             UnstableFeature::iterator_try_collect => {
                 unstable(self, &feature, allowed);
                 has(
@@ -362,6 +398,10 @@ impl Nightly for AutoCfg {
                     allowed,
                     probes::try_trait_v2_residual::AVAILABLE,
                 );
+            }
+            UnstableFeature::write_all_vectored => {
+                unstable(ac, &feature, allowed);
+                has(ac, &feature, allowed, probes::write_all_vectored::AVAILABLE);
             }
             UnstableFeature::OtherFeature(_) => unstable(self, &feature, allowed),
         }
