@@ -115,6 +115,11 @@ pub enum UnstableFeature {
     ///   use std::assert_matches::assert_matches;
     ///   ```
     assert_matches,
+    /// ## Provides cfg flags for feature [`can_vector`](https://github.com/rust-lang/rust/issues/69941)
+    /// - `#![cfg_attr(unstable_can_vector, feature(can_vector))]`
+    /// - `#[cfg(has_can_vector)]`
+    /// - this gates [`std::io::Read::is_read_vectored`] & [`std::io::Write::is_write_vectored`]
+    can_vector,
     /// ## Provides cfg flags:
     /// - `#![cfg_attr(unstable_iterator_try_collect, feature(iterator_try_collect))]`
     /// - `#[cfg(has_iterator_try_collect)]`
@@ -144,6 +149,7 @@ impl UnstableFeature {
     fn from(feature: &str) -> Self {
         match feature {
             "assert_matches" => Self::assert_matches,
+            "can_vector" => Self::can_vector,
             "iterator_try_collect" => Self::iterator_try_collect,
             "never_type" => Self::never_type,
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
@@ -228,6 +234,15 @@ use std::assert_matches::assert_matches;
 
 fn main() {
     assert_matches!(Some(4), Some(_));
+}
+"#;
+    }
+
+    pub mod can_vector {
+        pub const AVAILABLE: &str = r#"
+use std::io::Read;
+fn main() {
+    std::io::empty().is_read_vectored();
 }
 "#;
     }
@@ -320,6 +335,10 @@ impl Nightly for AutoCfg {
                     //    ^^^^^^^ assert_matches was stabilised in root
                     autocfg::emit("assert_matches_location=\"module\"");
                 }
+            }
+            UnstableFeature::can_vector => {
+                unstable(ac, &feature, allowed);
+                has(ac, &feature, allowed, probes::can_vector::AVAILABLE);
             }
             UnstableFeature::iterator_try_collect => {
                 unstable(self, &feature, allowed);
