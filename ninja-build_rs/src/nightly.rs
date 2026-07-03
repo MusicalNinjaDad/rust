@@ -27,10 +27,25 @@ pub enum UnstableFeature {
     ///   use std::assert_matches::assert_matches;
     ///   ```
     assert_matches,
+    /// ### Provides cfg flags:
+    /// - `unstable_iterator_try_collect`
+    /// - `has_iterator_try_collect`
     iterator_try_collect,
+    /// ### Provides cfg flags:
+    /// - `unstable_never_type`
+    /// - `has_never_type`
     never_type,
+    /// ### Provides cfg flags:
+    /// - `unstable_proc_macro_diagnostic`
+    /// - `has_proc_macro_diagnostic`
     proc_macro_diagnostic,
+    /// ### Provides cfg flags:
+    /// - `unstable_try_trait_v2`
+    /// - `has_try_trait_v2`
     try_trait_v2,
+    /// ### Provides cfg flags:
+    /// - `unstable_try_trait_v2_residual`
+    /// - `has_try_trait_v2_residual`
     try_trait_v2_residual,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
     OtherFeature(String),
