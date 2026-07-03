@@ -370,6 +370,7 @@ dependencies = [
  "clap-cargo",
  "dircpy",
  "exit_safely",
+ "ninja-build_rs",
  "tempfile",
  "try_v2",
 ]
