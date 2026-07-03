@@ -140,6 +140,11 @@ pub enum UnstableFeature {
     /// - `#![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]`
     /// - `#[cfg(has_try_trait_v2_residual)]`
     try_trait_v2_residual,
+    /// ## Provides cfg flags for feature [`write_all_vectored`](https://github.com/rust-lang/rust/issues/70436)
+    /// - `#![cfg_attr(unstable_write_all_vectored, feature(write_all_vectored))]`
+    /// - `#[cfg(has_write_all_vectored)]`
+    /// - this gates [`std::io::Write::write_all_vectored`]
+    write_all_vectored,
     /// only provides `unstable_...` - please raise a PR to add a custom probe for `has_...`
     OtherFeature(String),
 }
@@ -155,6 +160,7 @@ impl UnstableFeature {
             "proc_macro_diagnostic" => Self::proc_macro_diagnostic,
             "try_trait_v2" => Self::try_trait_v2,
             "try_trait_v2_residual" => Self::try_trait_v2_residual,
+            "write_all_vectored" => Self::write_all_vectored,
             _ => Self::OtherFeature(feature.to_string()),
         }
     }
@@ -287,6 +293,17 @@ use std::ops::Try;
 use std::ops::Residual;
 "#;
     }
+
+    pub mod write_all_vectored {
+        pub const AVAILABLE: &str = r#"
+use std::io::{empty, Write, IoSlice};
+fn main() {
+    let buf: [u8;_] = [0];
+    let slice = IoSlice::new(&buf);
+    empty().write_all_vectored(&mut [slice]);
+}
+"#;
+    }
 }
 
 /// Adds [`AutoCfg::emit_unstable_feature`](Nightly::emit_unstable_feature)
@@ -381,6 +398,10 @@ impl Nightly for AutoCfg {
                     allowed,
                     probes::try_trait_v2_residual::AVAILABLE,
                 );
+            }
+            UnstableFeature::write_all_vectored => {
+                unstable(ac, &feature, allowed);
+                has(ac, &feature, allowed, probes::write_all_vectored::AVAILABLE);
             }
             UnstableFeature::OtherFeature(_) => unstable(self, &feature, allowed),
         }
