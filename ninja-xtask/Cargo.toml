@@ -22,7 +22,7 @@ pkg-url = "{ repo }/releases/download/{ name }_v{ version }/{ name }-{ target }-
 clap = { version = "4.6.0", features = ["derive"] }
 clap-cargo = "0.18.3"
 exit_safely = "0.3.3"
-try_v2 = "0.9.2"
+try_v2 = "0.10.1"
 
 [dev-dependencies]
 dircpy = "0.3.20"
