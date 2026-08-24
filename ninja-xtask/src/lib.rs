@@ -354,7 +354,7 @@ impl From<&NinjaCommand> for CheckFlags {
 
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
+    use std::{assert_matches, process::Command};
 
     use super::*;
 
@@ -385,21 +385,20 @@ mod tests {
                 json: None,
             }),
             Exit::IO(WithJson {
-                value: "one".to_string(),
+                value: "one\n".to_string(),
                 json: None,
             }),
             Exit::Error(WithJson {
-                value: "two".to_string(),
+                value: "two\n".to_string(),
                 json: None,
             }),
             Exit::Error(WithJson {
-                value: "three".to_string(),
+                value: "three\n".to_string(),
                 json: None,
             }),
         ];
         let exit: Exit<WithJson<()>> = exits.into_iter().collect();
         let expected = "one\ntwo\nthree\n";
-        dbg!(&exit);
-        assert!(matches!(exit, Exit::Error(s) if s.value == expected));
+        assert_matches!(exit, Exit::IO(s) if s.value == expected);
     }
 }
