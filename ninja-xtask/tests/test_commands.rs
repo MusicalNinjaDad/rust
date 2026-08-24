@@ -35,6 +35,7 @@ fn fail_output() {
     let Exit::Error(output) = exit else {
         panic!("test didn't fail")
     };
+    let output = output.value;
     assert!(output.contains("====== tests exited with"));
     assert!(output.contains("test printed to stdout"));
     assert!(output.contains("test dbg"));

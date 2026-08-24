@@ -2,11 +2,11 @@ use std::path::Path;
 
 use clap::Parser;
 use ninja_xtask::{
-    CargoCmd, CheckFlags, Exit, NinjaCommand,
+    CargoCmd, CheckFlags, Exit, NinjaCommand, WithJson,
     commands::{build, clippy, clippy_tests, fmt, git_add, test, test_examples},
 };
 
-fn main() -> Exit<()> {
+fn main() -> Exit<WithJson<()>> {
     let CargoCmd::Ninja(xtask) = CargoCmd::try_parse()?;
     let root = Path::new(".");
     let checkflags = CheckFlags::from(&xtask);
@@ -14,7 +14,7 @@ fn main() -> Exit<()> {
     match &xtask {
         NinjaCommand::Stage { .. } => {
             let fmt = fmt(root, checkflags);
-            Exit::from(fmt)?;
+            let fmt = Exit::from(fmt)?;
 
             let clippy = [clippy(root, checkflags), clippy_tests(root, checkflags)];
             let clippy_result = Exit::from_iter(clippy);
@@ -24,10 +24,10 @@ fn main() -> Exit<()> {
             let test_result = Exit::from_iter(tests);
 
             // But we do want to collect all the results before returning or staging
-            Exit::from_iter([clippy_result, test_result])?;
+            let checks = Exit::from_iter([Exit::Ok(fmt), clippy_result, test_result])?;
 
             let git = git_add(root, checkflags);
-            Exit::from(git)
+            Exit::from_iter([Exit::Ok(checks), Exit::from(git)])
         }
         NinjaCommand::Build {
             glibc,

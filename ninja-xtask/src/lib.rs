@@ -3,7 +3,7 @@
 #![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]
 
 use std::{
-    fmt::Debug,
+    fmt::{Debug, Display},
     io,
     process::{Child, Output, Termination as _T},
 };
@@ -23,53 +23,138 @@ pub mod commands;
 #[must_use]
 pub enum Exit<T: _T> {
     Ok(T) = 0,
-    Error(String) = 1,
-    InvocationError(String) = 2,
-    IO(String) = 3,
+    Error(WithJson<String>) = 1,
+    InvocationError(WithJson<String>) = 2,
+    IO(WithJson<String>) = 3,
 }
 
-impl Exit<()> {
+impl<T> Display for WithJson<T>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.value.fmt(f)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct WithJson<T> {
+    pub value: T,
+    pub json: Option<Value>,
+}
+
+impl<T> Ord for WithJson<T>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.value.cmp(&other.value) {
+            std::cmp::Ordering::Equal => {}
+            ord => return ord,
+        }
+        Ord::cmp(
+            &self.json.as_ref().unwrap_or_default().to_string(),
+            &other.json.as_ref().unwrap_or_default().to_string(),
+        )
+    }
+}
+
+impl<T> PartialOrd for WithJson<T>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.value.partial_cmp(&other.value) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        PartialOrd::partial_cmp(
+            &self.json.as_ref().unwrap_or_default().to_string(),
+            &other.json.as_ref().unwrap_or_default().to_string(),
+        )
+    }
+}
+
+impl<T> _T for WithJson<T>
+where
+    T: _T,
+{
+    fn report(self) -> std::process::ExitCode {
+        if let Some(json) = self.json {
+            println!("{json}");
+        };
+        self.value.report()
+    }
+}
+
+impl Exit<WithJson<()>> {
     fn message(&self) -> &str {
         match self {
             Exit::Ok(_) => "",
-            Exit::Error(m) => m,
-            Exit::InvocationError(m) => m,
-            Exit::IO(m) => m,
+            Exit::Error(WithJson {
+                value: msg,
+                json: _,
+            }) => msg,
+            Exit::InvocationError(WithJson {
+                value: msg,
+                json: _,
+            }) => msg,
+            Exit::IO(WithJson {
+                value: msg,
+                json: _,
+            }) => msg,
         }
     }
 
-    fn replace_message(self, msg: String) -> Option<Self> {
+    fn replace_message(self, msg: String, jsons: Vec<Value>) -> Self {
+        let json = (!jsons.is_empty()).then(|| jsons.into_iter().collect::<Value>());
         match self {
-            Exit::Ok(_) => None,
-            Exit::Error(_) => Some(Exit::Error(msg)),
-            Exit::InvocationError(_) => Some(Exit::InvocationError(msg)),
-            Exit::IO(_) => Some(Exit::IO(msg)),
+            Exit::Ok(_) => Self::Ok(WithJson { value: (), json }),
+            Exit::Error(_) => Exit::Error(WithJson { value: msg, json }),
+            Exit::InvocationError(_) => Exit::InvocationError(WithJson { value: msg, json }),
+            Exit::IO(_) => Exit::IO(WithJson { value: msg, json }),
         }
     }
 }
 
-impl FromIterator<Exit<()>> for Exit<()> {
-    fn from_iter<I: IntoIterator<Item = Exit<()>>>(iter: I) -> Self {
+impl FromIterator<Exit<WithJson<()>>> for Exit<WithJson<()>> {
+    fn from_iter<I: IntoIterator<Item = Exit<WithJson<()>>>>(iter: I) -> Self {
         let mut msg = String::new();
+        let mut jsons = Vec::<Value>::new();
         iter.into_iter()
-            .filter_map(|e| {
-                if let Exit::Ok(_) = e {
-                    None
-                } else {
-                    msg.push_str(e.message());
+            .filter_map(|exit| match exit {
+                Exit::Ok(WithJson {
+                    value: _,
+                    json: Some(json),
+                }) => {
+                    jsons.push(json);
+                    Some(Exit::Ok(WithJson {
+                        value: (),
+                        json: None,
+                    }))
+                }
+                Exit::Ok(_) => None,
+                _ => {
+                    msg.push_str(exit.message());
                     msg.push('\n');
-                    Some(e)
+                    Some(exit)
                 }
             })
-            .min()
-            .and_then(|e| e.replace_message(msg))
-            .unwrap_or(Exit::Ok(()))
+            .max()
+            .map(|highest_exit_code| highest_exit_code.replace_message(msg, jsons))
+            .unwrap_or(Exit::Ok(WithJson {
+                value: (),
+                json: None,
+            }))
     }
 }
 
 impl<T: _T> From<clap::Error> for Exit<T> {
     fn from(e: clap::Error) -> Self {
-        Self::InvocationError(e.to_string())
+        Self::InvocationError(WithJson {
+            value: e.to_string(),
+            json: None,
+        })
     }
 }
 
@@ -94,7 +179,7 @@ impl CmdExt for Result<Output, io::Error> {
     }
 }
 
-impl From<Cmd> for Exit<()> {
+impl From<Cmd> for Exit<WithJson<()>> {
     fn from(cmd: Cmd) -> Self {
         let flags = cmd.flags;
         let task = cmd.name;
@@ -112,24 +197,35 @@ impl From<Cmd> for Exit<()> {
                     "status": &status.to_string(),
                     "payload": payload,
                 });
-                println!("{json}");
                 if status.success() {
-                    Exit::Ok(())
+                    Exit::Ok(WithJson {
+                        value: (),
+                        json: Some(json),
+                    })
                 } else {
-                    Exit::Error(String::new())
+                    Exit::Error(WithJson {
+                        value: String::new(),
+                        json: Some(json),
+                    })
                 }
             }
             Ok(output) if !output.status.success() => {
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 let stderr = String::from_utf8_lossy(&output.stderr);
-                Self::Error(format!(
-                    "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
-                    status = output.status
-                ))
+                Self::Error(WithJson {
+                    value: format!(
+                        "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
+                        status = output.status
+                    ),
+                    json: None,
+                })
             }
             Ok(_) => {
                 println!("{task}: OK");
-                Self::Ok(())
+                Self::Ok(WithJson {
+                    value: (),
+                    json: None,
+                })
             }
             Err(err_spawning) if flags.contains(CheckFlags::JSON) => {
                 let json = json!({
@@ -137,12 +233,17 @@ impl From<Cmd> for Exit<()> {
                     "status": "failed to spawn",
                     "error": &err_spawning.to_string(),
                 });
-                println!("{json}");
-                Exit::IO(String::new())
+                Exit::IO(WithJson {
+                    value: String::new(),
+                    json: None,
+                })
             }
             Err(err_spawning) => {
                 let msg = format!("{task} failed: {err_spawning}");
-                Self::IO(msg)
+                Self::IO(WithJson {
+                    value: msg,
+                    json: None,
+                })
             }
         }
     }
@@ -184,13 +285,13 @@ impl SpawnedExt for Result<Child, io::Error> {
     }
 }
 
-impl FromIterator<Spawned> for Exit<()> {
+impl FromIterator<Spawned> for Exit<WithJson<()>> {
     fn from_iter<I: IntoIterator<Item = Spawned>>(spawns: I) -> Self {
         spawns.into_iter().map(Exit::from).collect()
     }
 }
 
-impl From<Spawned> for Exit<()> {
+impl From<Spawned> for Exit<WithJson<()>> {
     fn from(spawn: Spawned) -> Self {
         spawn.wait().into()
     }
@@ -266,8 +367,12 @@ mod tests {
         assert!(
             matches!(splat.result, Result::Err(ref e) if matches!(e.kind(), io::ErrorKind::NotFound))
         );
-        let exit: Exit<()> = Exit::from(splat);
-        let Exit::IO(ref msg) = exit else {
+        let exit: Exit<WithJson<()>> = Exit::from(splat);
+        let Exit::IO(WithJson {
+            value: msg,
+            json: _,
+        }) = exit
+        else {
             panic!("not an IO2")
         };
         eprintln!("{}", msg);
@@ -277,14 +382,26 @@ mod tests {
     #[test]
     fn collect_exit() {
         let exits = [
-            Exit::Ok(()),
-            Exit::IO("one".to_string()),
-            Exit::Error("two".to_string()),
-            Exit::Error("three".to_string()),
+            Exit::Ok(WithJson {
+                value: (),
+                json: None,
+            }),
+            Exit::IO(WithJson {
+                value: "one".to_string(),
+                json: None,
+            }),
+            Exit::Error(WithJson {
+                value: "two".to_string(),
+                json: None,
+            }),
+            Exit::Error(WithJson {
+                value: "three".to_string(),
+                json: None,
+            }),
         ];
-        let exit: Exit<()> = exits.into_iter().collect();
+        let exit: Exit<WithJson<()>> = exits.into_iter().collect();
         let expected = "one\ntwo\nthree\n";
         dbg!(&exit);
-        assert!(matches!(exit, Exit::Error(s) if s == expected));
+        assert!(matches!(exit, Exit::Error(s) if s.value == expected));
     }
 }
