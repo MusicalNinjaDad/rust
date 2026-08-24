@@ -5,6 +5,7 @@
 use std::{
     fmt::Debug,
     io,
+    os::unix::process::ExitStatusExt,
     process::{Child, Output, Termination as _T},
 };
 
@@ -154,7 +155,54 @@ impl FromIterator<Spawned> for Exit<()> {
 
 impl From<Spawned> for Exit<()> {
     fn from(spawn: Spawned) -> Self {
-        spawn.wait().into()
+        let flags = spawn.flags;
+        let cmd = spawn.wait();
+        if flags.contains(CheckFlags::JSON) {
+            let task = cmd.name;
+            match cmd.result {
+                Ok(output) => {
+                    let status = output.status;
+                    let payload = String::from_utf8_lossy(&output.stdout);
+                    let mut json = String::new();
+                    json.push_str(r#"{ "task": "#);
+                    json.push('"');
+                    json.push_str(task);
+                    json.push('"');
+                    json.push_str(r#", "status": "#);
+                    json.push('"');
+                    json.push_str(&status.to_string());
+                    json.push('"');
+                    if !status.success() {
+                        json.push_str(r#", "payload": "#);
+                        json.push_str(&payload);
+                    }
+                    json.push('}');
+                    println!("{json}");
+                    if status.success() {
+                        Exit::Ok(())
+                    } else {
+                        Exit::Error(String::new())
+                    }
+                }
+                Err(err_spawning) => {
+                    let mut json = String::new();
+                    json.push_str(r#"{ "task": "#);
+                    json.push('"');
+                    json.push_str(task);
+                    json.push('"');
+                    json.push_str(r#", "status": "failed to spawn""#);
+                    json.push_str(r#", "error": "#);
+                    json.push('"');
+                    json.push_str(&err_spawning.to_string());
+                    json.push('"');
+                    json.push('}');
+                    println!("{json}");
+                    Exit::IO(String::new())
+                }
+            }
+        } else {
+            cmd.into()
+        }
     }
 }
 
