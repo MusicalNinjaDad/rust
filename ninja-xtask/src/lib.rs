@@ -101,10 +101,12 @@ impl From<Cmd> for Exit<()> {
         match cmd.result {
             Ok(output) if flags.contains(CheckFlags::JSON) => {
                 let status = output.status;
-                let payload: Option<Value> = (!output.status.success()).then(|| {
-                    serde_json::from_str(&String::from_utf8_lossy(&output.stdout))
-                        .unwrap_or_else(|err| json!({"unparsable": &err.to_string()}))
-                });
+                let payload = String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .filter(|line| line.starts_with("{"))
+                    .map(serde_json::from_str::<Value>)
+                    .map(|json| json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()})))
+                    .collect::<Value>();
                 let json = json!({
                     "task": task,
                     "status": &status.to_string(),
