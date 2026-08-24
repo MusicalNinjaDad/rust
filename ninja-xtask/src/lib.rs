@@ -33,11 +33,15 @@ where
     T: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.value.fmt(f)
+        self.value.fmt(f)?;
+        if let Some(json) = self.json.clone() {
+            write!(f, "\n{}", json)?;
+        };
+        Ok(())
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct WithJson<T> {
     pub value: T,
     pub json: Option<Value>,
@@ -108,11 +112,21 @@ impl Exit<WithJson<()>> {
 
     fn replace_message(self, msg: String, jsons: Vec<Value>) -> Self {
         let json = (!jsons.is_empty()).then(|| jsons.into_iter().collect::<Value>());
+        dbg!(&json);
         match self {
             Exit::Ok(_) => Self::Ok(WithJson { value: (), json }),
             Exit::Error(_) => Exit::Error(WithJson { value: msg, json }),
             Exit::InvocationError(_) => Exit::InvocationError(WithJson { value: msg, json }),
             Exit::IO(_) => Exit::IO(WithJson { value: msg, json }),
+        }
+    }
+
+    pub fn take_json(&mut self) -> Option<Value> {
+        match self {
+            Exit::Ok(WithJson { json, .. }) => json.take(),
+            Exit::Error(WithJson { json, .. }) => json.take(),
+            Exit::InvocationError(WithJson { json, .. }) => json.take(),
+            Exit::IO(WithJson { json, .. }) => json.take(),
         }
     }
 }
@@ -122,30 +136,14 @@ impl FromIterator<Exit<WithJson<()>>> for Exit<WithJson<()>> {
         let mut msg = String::new();
         let mut jsons = Vec::<Value>::new();
         iter.into_iter()
-            .filter_map(|exit| match exit {
-                Exit::Ok(WithJson {
-                    value: _,
-                    json: Some(json),
-                }) => {
-                    jsons.push(json);
-                    Some(Exit::Ok(WithJson {
-                        value: (),
-                        json: None,
-                    }))
-                }
-                Exit::Ok(_) => None,
-                _ => {
-                    msg.push_str(exit.message());
-                    msg.push('\n');
-                    Some(exit)
-                }
+            .map(|mut exit| {
+                msg.push_str(exit.message());
+                jsons.push(exit.take_json().unwrap_or_default());
+                exit
             })
             .max()
             .map(|highest_exit_code| highest_exit_code.replace_message(msg, jsons))
-            .unwrap_or(Exit::Ok(WithJson {
-                value: (),
-                json: None,
-            }))
+            .unwrap_or(Exit::Ok(Default::default()))
     }
 }
 
@@ -235,7 +233,7 @@ impl From<Cmd> for Exit<WithJson<()>> {
                 });
                 Exit::IO(WithJson {
                     value: String::new(),
-                    json: None,
+                    json: Some(json),
                 })
             }
             Err(err_spawning) => {
