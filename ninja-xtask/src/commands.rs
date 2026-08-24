@@ -3,7 +3,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{Cmd, CmdExt as _, Spawned, SpawnedExt as _};
+use crate::{CheckFlags, Cmd, CmdExt as _, Spawned, SpawnedExt as _};
 
 pub fn fmt(root: &Path) -> Cmd {
     Command::new("cargo")
@@ -22,46 +22,76 @@ pub fn git_add(root: &Path) -> Cmd {
         .into_cmd("git add")
 }
 
-pub fn clippy(root: &Path) -> Spawned {
-    Command::new("cargo")
+pub fn clippy(root: &Path, flags: CheckFlags) -> Spawned {
+    let mut clippy = Command::new("cargo");
+    clippy
         .current_dir(root)
         .arg("clippy")
         .stderr(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .into_spawned("clippy")
+        .stdout(Stdio::piped());
+    if flags.contains(CheckFlags::JSON) {
+        clippy.arg("--message-format=json");
+    }
+    if flags.contains(CheckFlags::STRICT) {
+        clippy.args(["--", "--deny", "warnings"]);
+    }
+    clippy.spawn().into_spawned("clippy")
 }
 
-pub fn clippy_tests(root: &Path) -> Spawned {
-    Command::new("cargo")
+pub fn clippy_tests(root: &Path, flags: CheckFlags) -> Spawned {
+    let mut clippy = Command::new("cargo");
+    clippy
         .current_dir(root)
         .arg("clippy")
         .arg("--tests")
         .stderr(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .into_spawned("clippy the tests")
+        .stdout(Stdio::piped());
+    if flags.contains(CheckFlags::JSON) {
+        clippy.arg("--message-format=json");
+    }
+    if flags.contains(CheckFlags::STRICT) {
+        clippy.args(["--", "--deny", "warnings"]);
+    }
+    clippy.spawn().into_spawned("clippy the tests")
 }
 
-pub fn test(root: &Path) -> Spawned {
-    Command::new("cargo")
+pub fn test(root: &Path, flags: CheckFlags) -> Spawned {
+    let mut clippy = Command::new("cargo");
+    clippy
         .current_dir(root)
         .arg("test")
         .stderr(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .into_spawned("tests")
+        .stdout(Stdio::piped());
+    if flags.contains(CheckFlags::JSON) {
+        clippy.args([
+            "--message-format=json",
+            "--",
+            "-Zunstable-options",
+            "--format",
+            "json",
+        ]);
+    }
+    clippy.spawn().into_spawned("tests")
 }
 
-pub fn test_examples(root: &Path) -> Spawned {
-    Command::new("cargo")
+pub fn test_examples(root: &Path, flags: CheckFlags) -> Spawned {
+    let mut clippy = Command::new("cargo");
+    clippy
         .current_dir(root)
         .arg("test")
         .arg("--examples")
         .stderr(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .into_spawned("test examples")
+        .stdout(Stdio::piped());
+    if flags.contains(CheckFlags::JSON) {
+        clippy.args([
+            "--message-format=json",
+            "--",
+            "-Zunstable-options",
+            "--format",
+            "json",
+        ]);
+    }
+    clippy.spawn().into_spawned("test examples")
 }
 
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`

@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use dircpy::copy_dir;
 use ninja_xtask::{
-    Exit,
+    CheckFlags, Exit,
     commands::{fmt, test},
 };
 use tempfile::tempdir;
@@ -30,7 +30,7 @@ fn fmt_fixture() {
 #[test]
 fn fail_output() {
     let fixture = PathBuf::from("tests/fixture");
-    let run_tests = test(&fixture);
+    let run_tests = test(&fixture, CheckFlags::default());
     let exit = Exit::from(run_tests);
     let Exit::Error(output) = exit else {
         panic!("test didn't fail")

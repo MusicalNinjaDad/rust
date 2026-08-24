@@ -2,7 +2,8 @@ use std::path::Path;
 
 use clap::Parser;
 use ninja_xtask::{
-    CargoCmd, CheckFlags, NinjaCommand, Exit, commands::{build, clippy, clippy_tests, fmt, git_add, test, test_examples},
+    CargoCmd, CheckFlags, Exit, NinjaCommand,
+    commands::{build, clippy, clippy_tests, fmt, git_add, test, test_examples},
 };
 
 fn main() -> Exit<()> {
@@ -16,10 +17,10 @@ fn main() -> Exit<()> {
             Exit::from(fmt)?;
 
             let checks = [
-                clippy(root),
-                clippy_tests(root),
-                test(root),
-                test_examples(root),
+                clippy(root, checkflags),
+                clippy_tests(root, checkflags),
+                test(root, checkflags),
+                test_examples(root, checkflags),
             ];
             Exit::from_iter(checks)?;
 
@@ -36,4 +37,3 @@ fn main() -> Exit<()> {
         }
     }
 }
-
