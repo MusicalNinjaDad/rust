@@ -1,5 +1,6 @@
 use std::{
     fmt::{Debug, Display},
+    io,
     process::Termination as _T,
 };
 
@@ -143,6 +144,15 @@ impl FromIterator<Exit<WithJson<()>>> for Exit<WithJson<()>> {
 impl<T: _T> From<clap::Error> for Exit<T> {
     fn from(e: clap::Error) -> Self {
         Self::InvocationError(WithJson {
+            value: e.to_string(),
+            json: None,
+        })
+    }
+}
+
+impl<T: _T> From<io::Error> for Exit<T> {
+    fn from(e: io::Error) -> Self {
+        Self::IO(WithJson {
             value: e.to_string(),
             json: None,
         })
