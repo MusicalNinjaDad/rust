@@ -35,6 +35,7 @@ pub fn clippy(root: &Path, flags: CheckFlags) -> Spawned {
     if flags.contains(CheckFlags::STRICT) {
         clippy.args(["--", "--deny", "warnings"]);
     }
+    dbg!(&clippy);
     clippy.spawn().into_spawned("clippy")
 }
 
@@ -52,18 +53,19 @@ pub fn clippy_tests(root: &Path, flags: CheckFlags) -> Spawned {
     if flags.contains(CheckFlags::STRICT) {
         clippy.args(["--", "--deny", "warnings"]);
     }
+    dbg!(&clippy);
     clippy.spawn().into_spawned("clippy the tests")
 }
 
 pub fn test(root: &Path, flags: CheckFlags) -> Spawned {
-    let mut clippy = Command::new("cargo");
-    clippy
+    let mut testlib = Command::new("cargo");
+    testlib
         .current_dir(root)
         .arg("test")
         .stderr(Stdio::piped())
         .stdout(Stdio::piped());
     if flags.contains(CheckFlags::JSON) {
-        clippy.args([
+        testlib.args([
             "--message-format=json",
             "--",
             "-Zunstable-options",
@@ -71,19 +73,20 @@ pub fn test(root: &Path, flags: CheckFlags) -> Spawned {
             "json",
         ]);
     }
-    clippy.spawn().into_spawned("tests")
+    dbg!(&testlib);
+    testlib.spawn().into_spawned("tests")
 }
 
 pub fn test_examples(root: &Path, flags: CheckFlags) -> Spawned {
-    let mut clippy = Command::new("cargo");
-    clippy
+    let mut testlib = Command::new("cargo");
+    testlib
         .current_dir(root)
         .arg("test")
         .arg("--examples")
         .stderr(Stdio::piped())
         .stdout(Stdio::piped());
     if flags.contains(CheckFlags::JSON) {
-        clippy.args([
+        testlib.args([
             "--message-format=json",
             "--",
             "-Zunstable-options",
@@ -91,7 +94,8 @@ pub fn test_examples(root: &Path, flags: CheckFlags) -> Spawned {
             "json",
         ]);
     }
-    clippy.spawn().into_spawned("test examples")
+    dbg!(&testlib);
+    testlib.spawn().into_spawned("test examples")
 }
 
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`

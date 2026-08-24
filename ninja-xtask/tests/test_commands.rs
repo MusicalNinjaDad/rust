@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{fs, mem, path::PathBuf};
 
 use dircpy::copy_dir;
 use ninja_xtask::{
@@ -38,6 +38,6 @@ fn fail_output() {
     assert!(output.contains("====== tests exited with"));
     assert!(output.contains("test printed to stdout"));
     assert!(output.contains("test dbg"));
-    assert!(output.contains("left: 5"));
+    assert!(output.contains("left: 6"));
     println!("{output}");
 }

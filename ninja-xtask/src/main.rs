@@ -16,13 +16,15 @@ fn main() -> Exit<()> {
             let fmt = fmt(root);
             Exit::from(fmt)?;
 
-            let checks = [
-                clippy(root, checkflags),
-                clippy_tests(root, checkflags),
-                test(root, checkflags),
-                test_examples(root, checkflags),
-            ];
-            Exit::from_iter(checks)?;
+            let clippy = [clippy(root, checkflags), clippy_tests(root, checkflags)];
+            let clippy_result = Exit::from_iter(clippy);
+
+            // Cannot run in parallel with clippy as --json leads to deadlock on build dir
+            let tests = [test(root, checkflags), test_examples(root, checkflags)];
+            let test_result = Exit::from_iter(tests);
+
+            // But we do want to collect all the results before returning or staging
+            Exit::from_iter([clippy_result, test_result])?;
 
             let git = git_add(root);
             Exit::from(git)
