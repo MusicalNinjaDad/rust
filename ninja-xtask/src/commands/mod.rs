@@ -37,51 +37,54 @@ impl CmdExt for Result<Output, io::Error> {
 
 impl From<Cmd> for Exit<WithJson<()>> {
     fn from(cmd: Cmd) -> Self {
-        let flags = cmd.flags;
-        let task = cmd.name;
-        match cmd.result {
-            Ok(output) if flags.contains(CheckFlags::JSON) => {
+        let Cmd {
+            name: task,
+            result: spawned_ok,
+            flags,
+        } = cmd;
+        match spawned_ok {
+            Ok(output) => {
                 let status = output.status;
-                let payload = String::from_utf8_lossy(&output.stdout)
-                    .lines()
-                    .filter(|line| line.starts_with("{"))
-                    .map(serde_json::from_str::<Value>)
-                    .map(|json| json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()})))
-                    .collect::<Value>();
-                let json = json!({
-                    "task": task,
-                    "status": &status.to_string(),
-                    "payload": payload,
-                });
-                if status.success() {
-                    Exit::Ok(WithJson {
-                        value: (),
-                        json: Some(json),
+                let json = flags.contains(CheckFlags::JSON).then(|| {
+                    let payload = String::from_utf8_lossy(&output.stdout)
+                        .lines()
+                        .filter(|line| line.starts_with("{"))
+                        .map(serde_json::from_str::<Value>)
+                        .map(|json| {
+                            json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()}))
+                        })
+                        .collect::<Value>();
+                    json!({
+                        "task": task,
+                        "status": &status.to_string(),
+                        "payload": payload,
                     })
-                } else {
-                    Exit::Error(WithJson {
+                });
+                match (status.success(), json) {
+                    (true, Some(json)) => Exit::Ok(WithJson { value: (), json: Some(json) }),
+                    (true, None) => {
+                        println!("{task}: OK");
+                        Self::Ok(WithJson {
+                            value: (),
+                            json: None,
+                        })
+                    }
+                    (false, Some(json)) => Exit::Error(WithJson {
                         value: String::new(),
                         json: Some(json),
-                    })
+                    }),
+                    (false, None) => {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        Self::Error(WithJson {
+                            value: format!(
+                                "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
+                                status = output.status
+                            ),
+                            json: None,
+                        })
+                    }
                 }
-            }
-            Ok(output) if !output.status.success() => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                Self::Error(WithJson {
-                    value: format!(
-                        "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
-                        status = output.status
-                    ),
-                    json: None,
-                })
-            }
-            Ok(_) => {
-                println!("{task}: OK");
-                Self::Ok(WithJson {
-                    value: (),
-                    json: None,
-                })
             }
             Err(err_spawning) if flags.contains(CheckFlags::JSON) => {
                 let json = json!({
