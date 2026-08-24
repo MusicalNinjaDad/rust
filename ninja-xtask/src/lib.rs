@@ -12,7 +12,7 @@ use bitflags::bitflags;
 use clap::{Parser, Subcommand};
 use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use exit_safely::Termination;
-use serde_json::json;
+use serde_json::{Value, json};
 use try_v2::Try;
 
 pub mod commands;
@@ -101,8 +101,10 @@ impl From<Cmd> for Exit<()> {
         match cmd.result {
             Ok(output) if flags.contains(CheckFlags::JSON) => {
                 let status = output.status;
-                let payload =
-                    (!output.status.success()).then(|| String::from_utf8_lossy(&output.stdout));
+                let payload: Option<Value> = (!output.status.success()).then(|| {
+                    serde_json::from_str(&String::from_utf8_lossy(&output.stdout))
+                        .unwrap_or_else(|err| json!({"unparsable": &err.to_string()}))
+                });
                 let json = json!({
                     "task": task,
                     "status": &status.to_string(),
