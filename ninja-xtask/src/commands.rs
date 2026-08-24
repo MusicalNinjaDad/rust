@@ -5,21 +5,21 @@ use std::{
 
 use crate::{CheckFlags, Cmd, CmdExt as _, Spawned, SpawnedExt as _};
 
-pub fn fmt(root: &Path) -> Cmd {
+pub fn fmt(root: &Path, flags: CheckFlags) -> Cmd {
     Command::new("cargo")
         .current_dir(root)
         .arg("fmt")
         .output()
-        .into_cmd("fmt")
+        .into_cmd("fmt", Some(flags))
 }
 
-pub fn git_add(root: &Path) -> Cmd {
+pub fn git_add(root: &Path, flags: CheckFlags) -> Cmd {
     Command::new("git")
         .current_dir(root)
         .arg("add")
         .arg(".")
         .output()
-        .into_cmd("git add")
+        .into_cmd("git add", Some(flags))
 }
 
 pub fn clippy(root: &Path, flags: CheckFlags) -> Spawned {

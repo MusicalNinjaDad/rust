@@ -13,7 +13,7 @@ fn main() -> Exit<()> {
 
     match &xtask {
         NinjaCommand::Stage { .. } => {
-            let fmt = fmt(root);
+            let fmt = fmt(root, checkflags);
             Exit::from(fmt)?;
 
             let clippy = [clippy(root, checkflags), clippy_tests(root, checkflags)];
@@ -26,7 +26,7 @@ fn main() -> Exit<()> {
             // But we do want to collect all the results before returning or staging
             Exit::from_iter([clippy_result, test_result])?;
 
-            let git = git_add(root);
+            let git = git_add(root, checkflags);
             Exit::from(git)
         }
         NinjaCommand::Build {

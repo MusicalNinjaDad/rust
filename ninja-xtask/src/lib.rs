@@ -5,7 +5,6 @@
 use std::{
     fmt::Debug,
     io,
-    os::unix::process::ExitStatusExt,
     process::{Child, Output, Termination as _T},
 };
 
@@ -77,37 +76,81 @@ impl<T: _T> From<clap::Error> for Exit<T> {
 pub struct Cmd {
     pub name: &'static str,
     pub result: Result<Output, io::Error>,
+    pub flags: CheckFlags,
 }
 
 trait CmdExt {
-    fn into_cmd(self, name: &'static str) -> Cmd;
+    fn into_cmd(self, name: &'static str, checkflags: Option<CheckFlags>) -> Cmd;
 }
 
 impl CmdExt for Result<Output, io::Error> {
-    fn into_cmd(self, name: &'static str) -> Cmd {
-        Cmd { name, result: self }
+    fn into_cmd(self, name: &'static str, checkflags: Option<CheckFlags>) -> Cmd {
+        Cmd {
+            name,
+            result: self,
+            flags: checkflags.unwrap_or_default(),
+        }
     }
 }
 
-// TODO: #10 Provide stdout & error code on failure
 impl From<Cmd> for Exit<()> {
     fn from(cmd: Cmd) -> Self {
+        let flags = cmd.flags;
+        let task = cmd.name;
         match cmd.result {
-            Ok(output) => {
-                if output.status.success() {
-                    println!("{}: OK", cmd.name);
-                    Self::Ok(())
+            Ok(output) if flags.contains(CheckFlags::JSON) => {
+                let status = output.status;
+                let payload = String::from_utf8_lossy(&output.stdout);
+                let mut json = String::new();
+                json.push_str(r#"{ "task": "#);
+                json.push('"');
+                json.push_str(task);
+                json.push('"');
+                json.push_str(r#", "status": "#);
+                json.push('"');
+                json.push_str(&status.to_string());
+                json.push('"');
+                if !status.success() {
+                    json.push_str(r#", "payload": "#);
+                    json.push_str(&payload);
+                }
+                json.push('}');
+                println!("{json}");
+                if status.success() {
+                    Exit::Ok(())
                 } else {
-                    let stdout = String::from_utf8_lossy(&output.stdout);
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    Self::Error(format!(
-                        "====== {} exited with {} ======\n-- stdout: --\n{}\n\n-- stderr: --\n{}",
-                        cmd.name, output.status, stdout, stderr
-                    ))
+                    Exit::Error(String::new())
                 }
             }
-            Err(e) => {
-                let msg = format!("{} failed: {}", cmd.name, e);
+            Ok(output) if !output.status.success() => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Self::Error(format!(
+                    "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
+                    status = output.status
+                ))
+            }
+            Ok(_) => {
+                println!("{task}: OK");
+                Self::Ok(())
+            }
+            Err(err_spawning) if flags.contains(CheckFlags::JSON) => {
+                let mut json = String::new();
+                json.push_str(r#"{ "task": "#);
+                json.push('"');
+                json.push_str(task);
+                json.push('"');
+                json.push_str(r#", "status": "failed to spawn""#);
+                json.push_str(r#", "error": "#);
+                json.push('"');
+                json.push_str(&err_spawning.to_string());
+                json.push('"');
+                json.push('}');
+                println!("{json}");
+                Exit::IO(String::new())
+            }
+            Err(err_spawning) => {
+                let msg = format!("{task} failed: {err_spawning}");
                 Self::IO(msg)
             }
         }
@@ -124,10 +167,13 @@ pub struct Spawned {
 impl Spawned {
     pub fn wait(self) -> Cmd {
         match self.child {
-            Ok(child) => child.wait_with_output().into_cmd(self.name),
+            Ok(child) => child
+                .wait_with_output()
+                .into_cmd(self.name, Some(self.flags)),
             Err(e) => Cmd {
                 name: self.name,
                 result: Err(e),
+                flags: self.flags,
             },
         }
     }
@@ -155,54 +201,7 @@ impl FromIterator<Spawned> for Exit<()> {
 
 impl From<Spawned> for Exit<()> {
     fn from(spawn: Spawned) -> Self {
-        let flags = spawn.flags;
-        let cmd = spawn.wait();
-        if flags.contains(CheckFlags::JSON) {
-            let task = cmd.name;
-            match cmd.result {
-                Ok(output) => {
-                    let status = output.status;
-                    let payload = String::from_utf8_lossy(&output.stdout);
-                    let mut json = String::new();
-                    json.push_str(r#"{ "task": "#);
-                    json.push('"');
-                    json.push_str(task);
-                    json.push('"');
-                    json.push_str(r#", "status": "#);
-                    json.push('"');
-                    json.push_str(&status.to_string());
-                    json.push('"');
-                    if !status.success() {
-                        json.push_str(r#", "payload": "#);
-                        json.push_str(&payload);
-                    }
-                    json.push('}');
-                    println!("{json}");
-                    if status.success() {
-                        Exit::Ok(())
-                    } else {
-                        Exit::Error(String::new())
-                    }
-                }
-                Err(err_spawning) => {
-                    let mut json = String::new();
-                    json.push_str(r#"{ "task": "#);
-                    json.push('"');
-                    json.push_str(task);
-                    json.push('"');
-                    json.push_str(r#", "status": "failed to spawn""#);
-                    json.push_str(r#", "error": "#);
-                    json.push('"');
-                    json.push_str(&err_spawning.to_string());
-                    json.push('"');
-                    json.push('}');
-                    println!("{json}");
-                    Exit::IO(String::new())
-                }
-            }
-        } else {
-            cmd.into()
-        }
+        spawn.wait().into()
     }
 }
 
@@ -271,7 +270,7 @@ mod tests {
 
     #[test]
     fn exit_from_404() {
-        let splat: Cmd = Command::new("splat").output().into_cmd("splat");
+        let splat: Cmd = Command::new("splat").output().into_cmd("splat", None);
         assert_eq!(splat.name, "splat");
         assert!(
             matches!(splat.result, Result::Err(ref e) if matches!(e.kind(), io::ErrorKind::NotFound))
