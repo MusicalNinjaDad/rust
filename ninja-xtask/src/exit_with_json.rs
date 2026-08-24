@@ -148,3 +148,56 @@ impl<T: _T> From<clap::Error> for Exit<T> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{assert_matches, io, process::Command};
+
+    use crate::commands::{Cmd, CmdExt as _};
+
+    use super::*;
+
+    #[test]
+    fn exit_from_404() {
+        let splat: Cmd = Command::new("splat").output().into_cmd("splat", None);
+        assert_eq!(splat.name, "splat");
+        assert!(
+            matches!(splat.result, Result::Err(ref e) if matches!(e.kind(), io::ErrorKind::NotFound))
+        );
+        let exit: Exit<WithJson<()>> = Exit::from(splat);
+        let Exit::IO(WithJson {
+            value: msg,
+            json: _,
+        }) = exit
+        else {
+            panic!("not an IO2")
+        };
+        eprintln!("{}", msg);
+        assert!(msg.starts_with("splat failed: "));
+    }
+
+    #[test]
+    fn collect_exit() {
+        let exits = [
+            Exit::Ok(WithJson {
+                value: (),
+                json: None,
+            }),
+            Exit::IO(WithJson {
+                value: "one\n".to_string(),
+                json: None,
+            }),
+            Exit::Error(WithJson {
+                value: "two\n".to_string(),
+                json: None,
+            }),
+            Exit::Error(WithJson {
+                value: "three\n".to_string(),
+                json: None,
+            }),
+        ];
+        let exit: Exit<WithJson<()>> = exits.into_iter().collect();
+        let expected = "one\ntwo\nthree\n";
+        assert_matches!(exit, Exit::IO(s) if s.value == expected);
+    }
+}

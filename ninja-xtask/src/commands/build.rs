@@ -3,7 +3,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{Spawned, SpawnedExt as _};
+use super::{Spawned, SpawnedExt as _};
 
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
 /// specified) optionally performing a release build (default is cargo's default profile).

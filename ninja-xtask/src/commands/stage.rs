@@ -3,7 +3,8 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{CheckFlags, Cmd, CmdExt as _, Spawned, SpawnedExt as _};
+use super::{Cmd, CmdExt as _, Spawned, SpawnedExt as _};
+use crate::CheckFlags;
 
 pub fn fmt(root: &Path, flags: CheckFlags) -> Cmd {
     Command::new("cargo")
