@@ -3,20 +3,15 @@
 #![cfg_attr(unstable_try_trait_v2_residual, feature(try_trait_v2_residual))]
 
 use std::{
-    fmt::{Debug, Display},
+    fmt::Debug,
     io,
-    process::{Child, Output, Termination as _T},
+    process::{Child, Output},
 };
 
 use bitflags::bitflags;
 use clap::{Parser, Subcommand};
 use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
-use exit_safely::Termination;
-use serde_json::{
-    Value::{self, Array},
-    json,
-};
-use try_v2::Try;
+use serde_json::{Value, json};
 
 pub mod commands;
 pub mod exit_with_json;

@@ -1,17 +1,10 @@
 use std::{
     fmt::{Debug, Display},
-    io,
-    process::{Child, Output, Termination as _T},
+    process::Termination as _T,
 };
 
-use bitflags::bitflags;
-use clap::{Parser, Subcommand};
-use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use exit_safely::Termination;
-use serde_json::{
-    Value::{self, Array},
-    json,
-};
+use serde_json::Value::{self, Array};
 use try_v2::Try;
 
 #[derive(Debug, Termination, Try, PartialEq, PartialOrd, Eq, Ord)]
