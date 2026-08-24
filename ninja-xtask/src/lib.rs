@@ -117,6 +117,7 @@ impl From<Cmd> for Exit<()> {
 pub struct Spawned {
     pub name: &'static str,
     pub child: Result<Child, io::Error>,
+    pub flags: CheckFlags,
 }
 
 impl Spawned {
@@ -132,12 +133,12 @@ impl Spawned {
 }
 
 trait SpawnedExt {
-    fn into_spawned(self, name: &'static str) -> Spawned;
+    fn into_spawned(self, name: &'static str, flags: Option<CheckFlags>) -> Spawned;
 }
 
 impl SpawnedExt for Result<Child, io::Error> {
-    fn into_spawned(self, name: &'static str) -> Spawned {
-        Spawned { name, child: self }
+    fn into_spawned(self, name: &'static str, flags: Option<CheckFlags>) -> Spawned {
+        Spawned { name, child: self, flags: flags.unwrap_or_default() }
     }
 }
 

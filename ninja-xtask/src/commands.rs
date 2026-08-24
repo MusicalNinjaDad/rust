@@ -35,8 +35,7 @@ pub fn clippy(root: &Path, flags: CheckFlags) -> Spawned {
     if flags.contains(CheckFlags::STRICT) {
         clippy.args(["--", "--deny", "warnings"]);
     }
-    dbg!(&clippy);
-    clippy.spawn().into_spawned("clippy")
+    clippy.spawn().into_spawned("clippy", Some(flags))
 }
 
 pub fn clippy_tests(root: &Path, flags: CheckFlags) -> Spawned {
@@ -53,8 +52,7 @@ pub fn clippy_tests(root: &Path, flags: CheckFlags) -> Spawned {
     if flags.contains(CheckFlags::STRICT) {
         clippy.args(["--", "--deny", "warnings"]);
     }
-    dbg!(&clippy);
-    clippy.spawn().into_spawned("clippy the tests")
+    clippy.spawn().into_spawned("clippy the tests", Some(flags))
 }
 
 pub fn test(root: &Path, flags: CheckFlags) -> Spawned {
@@ -73,8 +71,7 @@ pub fn test(root: &Path, flags: CheckFlags) -> Spawned {
             "json",
         ]);
     }
-    dbg!(&testlib);
-    testlib.spawn().into_spawned("tests")
+    testlib.spawn().into_spawned("tests", Some(flags))
 }
 
 pub fn test_examples(root: &Path, flags: CheckFlags) -> Spawned {
@@ -94,8 +91,7 @@ pub fn test_examples(root: &Path, flags: CheckFlags) -> Spawned {
             "json",
         ]);
     }
-    dbg!(&testlib);
-    testlib.spawn().into_spawned("test examples")
+    testlib.spawn().into_spawned("test examples", Some(flags))
 }
 
 /// Spawn `cargo build` (if no `glibc` specified) / `cargo zigbuild` (if `target` or `glibc`
@@ -118,7 +114,7 @@ pub fn build(
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .into_spawned("build")
+        .into_spawned("build", None)
 }
 
 struct BuildArgs {
