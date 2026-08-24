@@ -138,17 +138,17 @@ trait SpawnedExt {
 
 impl SpawnedExt for Result<Child, io::Error> {
     fn into_spawned(self, name: &'static str, flags: Option<CheckFlags>) -> Spawned {
-        Spawned { name, child: self, flags: flags.unwrap_or_default() }
+        Spawned {
+            name,
+            child: self,
+            flags: flags.unwrap_or_default(),
+        }
     }
 }
 
 impl FromIterator<Spawned> for Exit<()> {
     fn from_iter<I: IntoIterator<Item = Spawned>>(spawns: I) -> Self {
-        spawns
-            .into_iter()
-            .map(|spawn| spawn.wait())
-            .map(Exit::from)
-            .collect()
+        spawns.into_iter().map(Exit::from).collect()
     }
 }
 
