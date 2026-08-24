@@ -12,7 +12,10 @@ use bitflags::bitflags;
 use clap::{Parser, Subcommand};
 use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use exit_safely::Termination;
-use serde_json::{Value, json};
+use serde_json::{
+    Value::{self, Array},
+    json,
+};
 use try_v2::Try;
 
 pub mod commands;
@@ -137,8 +140,10 @@ impl FromIterator<Exit<WithJson<()>>> for Exit<WithJson<()>> {
         iter.into_iter()
             .map(|mut exit| {
                 msg.push_str(exit.message());
-                if let Some(json) = exit.take_json() {
-                    jsons.push(json);
+                match exit.take_json() {
+                    Some(Array(json)) => jsons.extend(json),
+                    Some(json) => jsons.push(json),
+                    None => {}
                 }
                 exit
             })
