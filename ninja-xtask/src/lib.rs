@@ -12,6 +12,7 @@ use bitflags::bitflags;
 use clap::{Parser, Subcommand};
 use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
 use exit_safely::Termination;
+use serde_json::json;
 use try_v2::Try;
 
 pub mod commands;
@@ -100,21 +101,13 @@ impl From<Cmd> for Exit<()> {
         match cmd.result {
             Ok(output) if flags.contains(CheckFlags::JSON) => {
                 let status = output.status;
-                let payload = String::from_utf8_lossy(&output.stdout);
-                let mut json = String::new();
-                json.push_str(r#"{ "task": "#);
-                json.push('"');
-                json.push_str(task);
-                json.push('"');
-                json.push_str(r#", "status": "#);
-                json.push('"');
-                json.push_str(&status.to_string());
-                json.push('"');
-                if !status.success() {
-                    json.push_str(r#", "payload": "#);
-                    json.push_str(&payload);
-                }
-                json.push('}');
+                let payload =
+                    (!output.status.success()).then(|| String::from_utf8_lossy(&output.stdout));
+                let json = json!({
+                    "task": task,
+                    "status": &status.to_string(),
+                    "payload": payload,
+                });
                 println!("{json}");
                 if status.success() {
                     Exit::Ok(())
@@ -135,17 +128,11 @@ impl From<Cmd> for Exit<()> {
                 Self::Ok(())
             }
             Err(err_spawning) if flags.contains(CheckFlags::JSON) => {
-                let mut json = String::new();
-                json.push_str(r#"{ "task": "#);
-                json.push('"');
-                json.push_str(task);
-                json.push('"');
-                json.push_str(r#", "status": "failed to spawn""#);
-                json.push_str(r#", "error": "#);
-                json.push('"');
-                json.push_str(&err_spawning.to_string());
-                json.push('"');
-                json.push('}');
+                let json = json!({
+                    "task": task,
+                    "status": "failed to spawn",
+                    "error": &err_spawning.to_string(),
+                });
                 println!("{json}");
                 Exit::IO(String::new())
             }
