@@ -112,7 +112,6 @@ impl Exit<WithJson<()>> {
 
     fn replace_message(self, msg: String, jsons: Vec<Value>) -> Self {
         let json = (!jsons.is_empty()).then(|| jsons.into_iter().collect::<Value>());
-        dbg!(&json);
         match self {
             Exit::Ok(_) => Self::Ok(WithJson { value: (), json }),
             Exit::Error(_) => Exit::Error(WithJson { value: msg, json }),
@@ -138,7 +137,9 @@ impl FromIterator<Exit<WithJson<()>>> for Exit<WithJson<()>> {
         iter.into_iter()
             .map(|mut exit| {
                 msg.push_str(exit.message());
-                jsons.push(exit.take_json().unwrap_or_default());
+                if let Some(json) = exit.take_json() {
+                    jsons.push(json);
+                }
                 exit
             })
             .max()
