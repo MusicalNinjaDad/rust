@@ -1,61 +1,35 @@
 use std::path::Path;
 
-use clap::{Parser, Subcommand};
-use clap_cargo::style::CLAP_STYLING as CARGO_STYLING;
+use clap::Parser;
 use ninja_xtask::{
-    Exit,
+    CargoCmd, CheckFlags, Exit, NinjaCommand, WithJson,
     commands::{build, clippy, clippy_tests, fmt, git_add, test, test_examples},
 };
 
-#[derive(Parser)]
-#[command(name = "cargo")]
-#[command(bin_name = "cargo")]
-#[command(styles = CARGO_STYLING)]
-enum CargoCmd {
-    #[command(subcommand)]
-    Ninja(Command),
-}
-
-#[derive(Subcommand)]
-#[command(version)]
-enum Command {
-    /// fmt, lint & test then stage everything in git if all is good
-    Stage,
-    /// build (optionally with zigbuild for a given glibc version)
-    Build {
-        /// build for a specific glibc version (WSL-Ubuntu is 2.35)
-        #[arg(short, long)]
-        glibc: Option<String>,
-        /// build a release build (default is cargo's default profile, usually debug)
-        #[arg(short, long)]
-        release: bool,
-        /// build for a given target
-        #[arg(long)]
-        target: Option<String>,
-    },
-}
-
-fn main() -> Exit<()> {
+fn main() -> Exit<WithJson<()>> {
     let CargoCmd::Ninja(xtask) = CargoCmd::try_parse()?;
     let root = Path::new(".");
+    let checkflags = CheckFlags::from(&xtask);
 
     match &xtask {
-        Command::Stage => {
-            let fmt = fmt(root);
-            Exit::from(fmt)?;
+        NinjaCommand::Stage { .. } => {
+            let fmt = fmt(root, checkflags);
+            let fmt = Exit::from(fmt)?;
 
-            let checks = [
-                clippy(root),
-                clippy_tests(root),
-                test(root),
-                test_examples(root),
-            ];
-            Exit::from_iter(checks)?;
+            let clippy = [clippy(root, checkflags), clippy_tests(root, checkflags)];
+            let clippy_result = Exit::from_iter(clippy);
 
-            let git = git_add(root);
-            Exit::from(git)
+            // Cannot run in parallel with clippy as --json leads to deadlock on build dir
+            let tests = [test(root, checkflags), test_examples(root, checkflags)];
+            let test_result = Exit::from_iter(tests);
+
+            // But we do want to collect all the results before returning or staging
+            let checks = Exit::from_iter([Exit::Ok(fmt), clippy_result, test_result])?;
+
+            let git = git_add(root, checkflags);
+            Exit::from_iter([Exit::Ok(checks), Exit::from(git)])
         }
-        Command::Build {
+        NinjaCommand::Build {
             glibc,
             release,
             target,
