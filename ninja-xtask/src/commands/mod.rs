@@ -39,68 +39,63 @@ impl From<Cmd> for Exit<WithJson<()>> {
     fn from(cmd: Cmd) -> Self {
         let Cmd {
             name: task,
-            result: spawned_ok,
+            result: did_it_spawn,
             flags,
         } = cmd;
-        match spawned_ok {
-            Ok(output) => {
-                let status = output.status;
-                let json = flags.contains(CheckFlags::JSON).then(|| {
-                    let payload = String::from_utf8_lossy(&output.stdout)
-                        .lines()
-                        .filter(|line| line.starts_with("{"))
-                        .map(serde_json::from_str::<Value>)
-                        .map(|json| {
-                            json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()}))
-                        })
-                        .collect::<Value>();
-                    json!({
-                        "task": task,
-                        "status": &status.to_string(),
-                        "payload": payload,
-                    })
-                });
-                match (status.success(), json) {
-                    (true, Some(json)) => Exit::Ok(WithJson { value: (), json: Some(json) }),
-                    (true, None) => {
-                        println!("{task}: OK");
-                        Self::Ok(WithJson {
-                            value: (),
-                            json: None,
-                        })
-                    }
-                    (false, Some(json)) => Exit::Error(WithJson {
-                        value: String::new(),
-                        json: Some(json),
-                    }),
-                    (false, None) => {
-                        let stdout = String::from_utf8_lossy(&output.stdout);
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        Self::Error(WithJson {
-                            value: format!(
-                                "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
-                                status = output.status
-                            ),
-                            json: None,
-                        })
-                    }
-                }
-            }
-            Err(err_spawning) if flags.contains(CheckFlags::JSON) => {
-                let json = json!({
-                    "task": task,
-                    "status": "failed to spawn",
-                    "error": &err_spawning.to_string(),
-                });
-                Exit::IO(WithJson {
-                    value: String::new(),
-                    json: Some(json),
+
+        if flags.contains(CheckFlags::JSON)
+            && let Err(err_spawning) = did_it_spawn
+        {
+            let json = json!({
+                "task": task,
+                "status": "failed to spawn",
+                "error": &err_spawning.to_string(),
+            });
+            return Exit::IO(WithJson {
+                value: String::new(),
+                json: Some(json),
+            });
+        }
+
+        let output = did_it_spawn?;
+        let status = output.status;
+        let json = flags.contains(CheckFlags::JSON).then(|| {
+            let payload = String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .filter(|line| line.starts_with("{"))
+                .map(serde_json::from_str::<Value>)
+                .map(|json| json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()})))
+                .collect::<Value>();
+            json!({
+                "task": task,
+                "status": &status.to_string(),
+                "payload": payload,
+            })
+        });
+        match (status.success(), json) {
+            (true, Some(json)) => Exit::Ok(WithJson {
+                value: (),
+                json: Some(json),
+            }),
+            (true, None) => {
+                println!("{task}: OK");
+                Self::Ok(WithJson {
+                    value: (),
+                    json: None,
                 })
             }
-            Err(err_spawning) => {
-                let msg = format!("{task} failed: {err_spawning}");
-                Self::IO(WithJson {
-                    value: msg,
+            (false, Some(json)) => Exit::Error(WithJson {
+                value: String::new(),
+                json: Some(json),
+            }),
+            (false, None) => {
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Self::Error(WithJson {
+                    value: format!(
+                        "====== {task} exited with {status} ======\n-- stdout: --\n{stdout}\n\n-- stderr: --\n{stderr}",
+                        status = output.status
+                    ),
                     json: None,
                 })
             }
