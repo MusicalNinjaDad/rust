@@ -83,7 +83,7 @@ impl From<Cmd> for Exit<WithJson<()>> {
         });
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-        
+
         match (status.success(), json) {
             (true, Some(json)) => Exit::Ok(WithJson {
                 value: (),
