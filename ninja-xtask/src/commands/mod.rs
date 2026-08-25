@@ -75,6 +75,15 @@ impl From<Cmd> for Exit<WithJson<()>> {
                 .filter(|line| line.starts_with("{"))
                 .map(serde_json::from_str::<Value>)
                 .map(|json| json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()})))
+                // TODO: Add verbose flag to output build messages in json
+                .filter(|json| {
+                    json.as_object().is_some_and(|fields| {
+                        fields.get("reason").is_some_and(|reason| {
+                            [Some("build-finished"), Some("compiler-message")]
+                                .contains(&reason.as_str())
+                        }) || fields.contains_key("event") // cargo test output
+                    })
+                })
                 .collect::<Value>();
             json!({
                 "task": task,
