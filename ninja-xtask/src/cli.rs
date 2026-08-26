@@ -17,6 +17,19 @@ pub enum CargoCmd {
 #[command(version)]
 pub enum NinjaCommand {
     /// fmt, lint & test then stage everything in git if all is good
+    ///
+    /// To provide any specfic environment variables for the executed cargo commands
+    /// create a *workspace* metadata section in Cargo.toml (if this is a single crate, you
+    /// can add the section to the crate Cargo.toml without a problem, if it's a workspace
+    /// add it to the workspace Cargo.toml). For example:
+    ///
+    /// ```toml
+    /// [workspace.metadata.ninja-xtask]
+    /// env = {
+    ///     "LD_LIBRARY_PATH" = false,  # unset variable, do not inherit
+    ///     "RUSTFLAGS" = "flag"        # set variable, overwriting inherited value
+    /// }
+    /// ```
     Stage {
         /// add --deny warnings to clippy invocations
         #[arg(long)]

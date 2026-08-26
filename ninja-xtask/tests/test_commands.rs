@@ -30,7 +30,7 @@ fn fmt_fixture() {
 #[test]
 fn fail_output() {
     let fixture = PathBuf::from("tests/fixture");
-    let run_tests = test(&fixture, CheckFlags::default());
+    let run_tests = test(&fixture, Default::default(), &Default::default());
     let exit = Exit::from(run_tests);
     let Exit::Error(output) = exit else {
         panic!("test didn't fail")

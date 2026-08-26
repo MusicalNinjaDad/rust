@@ -20,9 +20,11 @@ pkg-url = "{ repo }/releases/download/{ name }_v{ version }/{ name }-{ target }-
 
 [dependencies]
 bitflags = "2.13.1"
+cargo_metadata = "0.23.1"
 clap = { version = "4.6.0", features = ["derive"] }
 clap-cargo = "0.19.0"
 exit_safely = "0.3.3"
+serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 try_v2 = "0.9.2"
 

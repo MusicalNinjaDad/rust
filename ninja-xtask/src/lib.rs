@@ -4,6 +4,7 @@
 
 pub mod cli;
 pub mod commands;
+pub mod config;
 pub mod exit_with_json;
 
 pub use cli::*;
