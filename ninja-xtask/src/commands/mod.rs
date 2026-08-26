@@ -135,10 +135,10 @@ impl Spawned {
         match self.child {
             Ok(mut child) => {
                 let status = child.wait();
+                let stdout = self.stdout.join().unwrap();
+                let stderr = self.stderr.join().unwrap();
                 match status {
                     Ok(exit_status) => {
-                        let stdout = self.stdout.join().unwrap();
-                        let stderr = self.stderr.join().unwrap();
                         let output = Output {
                             status: exit_status,
                             stdout,
@@ -153,11 +153,15 @@ impl Spawned {
                     },
                 }
             }
-            Err(error_spawning) => Cmd {
-                name: self.name,
-                result: Err(error_spawning),
-                flags: self.flags,
-            },
+            Err(error_spawning) => {
+                let _ = self.stdout.join().unwrap();
+                let _ = self.stderr.join().unwrap();
+                Cmd {
+                    name: self.name,
+                    result: Err(error_spawning),
+                    flags: self.flags,
+                }
+            }
         }
     }
 }
