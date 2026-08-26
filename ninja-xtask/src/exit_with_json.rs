@@ -159,6 +159,7 @@ impl<T: _T> From<io::Error> for Exit<T> {
     }
 }
 
+//TODO: #95 Review error handling WithJson
 impl<T: _T> From<cargo_metadata::Error> for Exit<T> {
     fn from(error: cargo_metadata::Error) -> Self {
         match error {
