@@ -16,15 +16,15 @@ fn main() -> Exit<WithJson<()>> {
             let fmt = fmt(root, checkflags);
             let fmt = Exit::from(fmt)?;
 
-            let clippy = [clippy(root, checkflags), clippy_tests(root, checkflags)];
-            let clippy_result = Exit::from_iter(clippy);
+            let checks = Exit::from_iter([
+                clippy(root, checkflags),
+                clippy_tests(root, checkflags),
+                test(root, checkflags),
+                test_examples(root, checkflags),
+            ]);
 
-            // Cannot run in parallel with clippy as --json leads to deadlock on build dir
-            let tests = [test(root, checkflags), test_examples(root, checkflags)];
-            let test_result = Exit::from_iter(tests);
-
-            // But we do want to collect all the results before returning or staging
-            let checks = Exit::from_iter([Exit::Ok(fmt), clippy_result, test_result])?;
+            // Collect all the results and output before returning onm error or staging
+            let checks = Exit::from_iter([Exit::Ok(fmt), checks])?;
 
             let git = git_add(root, checkflags);
             Exit::from_iter([Exit::Ok(checks), Exit::from(git)])

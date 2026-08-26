@@ -1,7 +1,8 @@
 use std::{
     fmt::Debug,
-    io,
+    io::{self, Read},
     process::{Child, Output},
+    thread::{self, JoinHandle},
 };
 
 use serde_json::{Value, json};
@@ -74,6 +75,15 @@ impl From<Cmd> for Exit<WithJson<()>> {
                 .filter(|line| line.starts_with("{"))
                 .map(serde_json::from_str::<Value>)
                 .map(|json| json.unwrap_or_else(|err| json!({"unparsable": &err.to_string()})))
+                // TODO: Add verbose flag to output build messages in json
+                .filter(|json| {
+                    json.as_object().is_some_and(|fields| {
+                        fields.get("reason").is_some_and(|reason| {
+                            [Some("build-finished"), Some("compiler-message")]
+                                .contains(&reason.as_str())
+                        }) || fields.contains_key("event") // cargo test output
+                    })
+                })
                 .collect::<Value>();
             json!({
                 "task": task,
@@ -115,20 +125,43 @@ impl From<Cmd> for Exit<WithJson<()>> {
 pub struct Spawned {
     pub name: &'static str,
     pub child: Result<Child, io::Error>,
+    pub stdout: JoinHandle<Vec<u8>>,
+    pub stderr: JoinHandle<Vec<u8>>,
     pub flags: CheckFlags,
 }
 
 impl Spawned {
     pub fn wait(self) -> Cmd {
         match self.child {
-            Ok(child) => child
-                .wait_with_output()
-                .into_cmd(self.name, Some(self.flags)),
-            Err(e) => Cmd {
-                name: self.name,
-                result: Err(e),
-                flags: self.flags,
-            },
+            Ok(mut child) => {
+                let status = child.wait();
+                let stdout = self.stdout.join().unwrap();
+                let stderr = self.stderr.join().unwrap();
+                match status {
+                    Ok(exit_status) => {
+                        let output = Output {
+                            status: exit_status,
+                            stdout,
+                            stderr,
+                        };
+                        Ok(output).into_cmd(self.name, Some(self.flags))
+                    }
+                    Err(error_waiting) => Cmd {
+                        name: self.name,
+                        result: Err(error_waiting),
+                        flags: self.flags,
+                    },
+                }
+            }
+            Err(error_spawning) => {
+                let _ = self.stdout.join().unwrap();
+                let _ = self.stderr.join().unwrap();
+                Cmd {
+                    name: self.name,
+                    result: Err(error_spawning),
+                    flags: self.flags,
+                }
+            }
         }
     }
 }
@@ -138,10 +171,31 @@ pub trait SpawnedExt {
 }
 
 impl SpawnedExt for Result<Child, io::Error> {
-    fn into_spawned(self, name: &'static str, flags: Option<CheckFlags>) -> Spawned {
+    fn into_spawned(mut self, name: &'static str, flags: Option<CheckFlags>) -> Spawned {
+        let stdout_pipe = self.as_mut().ok().and_then(|child| child.stdout.take());
+        let stderr_pipe = self.as_mut().ok().and_then(|child| child.stderr.take());
+
+        let stdout_reader = thread::spawn(|| {
+            let mut buf = Vec::<u8>::with_capacity(65536);
+            if let Some(mut stdout) = stdout_pipe {
+                stdout.read_to_end(&mut buf).unwrap(); // Panic will end up in Result after .join()
+            }
+            buf
+        });
+
+        let stderr_reader = thread::spawn(|| {
+            let mut buf = Vec::<u8>::with_capacity(65536);
+            if let Some(mut stderr) = stderr_pipe {
+                stderr.read_to_end(&mut buf).unwrap(); // Panic will end up in Result after .join()
+            }
+            buf
+        });
+
         Spawned {
             name,
             child: self,
+            stdout: stdout_reader,
+            stderr: stderr_reader,
             flags: flags.unwrap_or_default(),
         }
     }
