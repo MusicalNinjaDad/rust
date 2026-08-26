@@ -159,6 +159,34 @@ impl<T: _T> From<io::Error> for Exit<T> {
     }
 }
 
+impl<T: _T> From<cargo_metadata::Error> for Exit<T> {
+    fn from(error: cargo_metadata::Error) -> Self {
+        match error {
+            cargo_metadata::Error::CargoMetadata { stderr } => Self::IO(WithJson {
+                value: stderr,
+                json: None,
+            }),
+            cargo_metadata::Error::Io(error) => error.into(),
+            cargo_metadata::Error::Utf8(utf8_error) => Self::IO(WithJson {
+                value: utf8_error.to_string(),
+                json: None,
+            }),
+            cargo_metadata::Error::ErrUtf8(_) => Self::IO(WithJson {
+                value: "Big problem with parsing Config.toml".to_string(),
+                json: None,
+            }),
+            cargo_metadata::Error::Json(error) => Self::IO(WithJson {
+                value: error.to_string(),
+                json: None,
+            }),
+            cargo_metadata::Error::NoJson => Self::IO(WithJson {
+                value: "Small problem with parsing Config.toml".to_string(),
+                json: None,
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{assert_matches, io, process::Command};
