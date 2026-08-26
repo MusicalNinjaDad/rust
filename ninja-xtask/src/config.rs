@@ -27,7 +27,7 @@ impl From<Value> for Config {
 }
 
 impl Config {
-    pub fn vars(&self) -> impl IntoIterator<Item = (&String, &str)> {
+    pub fn envs(&self) -> impl IntoIterator<Item = (&String, &str)> {
         self.env
             .iter()
             .filter_map(|(key, value)| value.as_str().map(|value| (key, value)))
@@ -49,7 +49,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn set_var() {
+    fn envs() {
         let metadata = json!({
             "ninja-xtask": {
                 "env": {
@@ -59,7 +59,7 @@ mod tests {
             }
         });
         let config = Config::from(metadata);
-        let vars: Vec<_> = config.vars().into_iter().collect();
+        let vars: Vec<_> = config.envs().into_iter().collect();
         let expected = [(&"CARGO_INCREMENTAL".to_string(), "1")];
         assert_eq!(vars, expected);
         let _assert_os_strs: Vec<(&OsStr, &OsStr)> = vars
@@ -69,7 +69,7 @@ mod tests {
     }
 
     #[test]
-    fn remove_var() {
+    fn env_remove() {
         let metadata = json!({
             "ninja-xtask": {
                 "env": {
