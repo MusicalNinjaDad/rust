@@ -52,7 +52,10 @@ RUN dnf update \
 
 ENV RUSTUP_HOME=/opt/rustup \
     CARGO_HOME=/opt/cargo \
-    PATH=/opt/cargo/bin:$PATH
+    PATH=/opt/cargo/bin:$PATH \
+    # See https://rust-lang.github.io/rustup/devel/environment-variables.html
+    #   & https://docs.docker.com/engine/storage/drivers/overlayfs-driver/#renaming-directories
+    RUSTUP_PERMIT_COPY_RENAME="1"
 
 RUN \
 # add foreign languages & linker used by rustc 
