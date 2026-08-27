@@ -28,6 +28,9 @@ jobs:
     needs:
       - skip_check
     if: needs.skip_check.outputs.should_skip != 'true'
+    defaults:
+      run:
+        working-directory: ninja-xtask
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -39,6 +42,9 @@ jobs:
     needs:
       - skip_check
     if: needs.skip_check.outputs.should_skip != 'true'
+    defaults:
+      run:
+        working-directory: ninja-xtask
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -49,6 +55,9 @@ jobs:
     needs:
       - skip_check
     if: needs.skip_check.outputs.should_skip != 'true'
+    defaults:
+      run:
+        working-directory: ninja-xtask
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7

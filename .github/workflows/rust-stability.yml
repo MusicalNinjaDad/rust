@@ -37,6 +37,9 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ninja-xtask
     steps:
     - uses: actions/checkout@v7
     - name: update rust
@@ -52,6 +55,9 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ninja-xtask
     steps:
     - uses: actions/checkout@v7
     - name: update rust
