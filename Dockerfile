@@ -52,7 +52,10 @@ RUN dnf update \
 
 ENV RUSTUP_HOME=/opt/rustup \
     CARGO_HOME=/opt/cargo \
-    PATH=/opt/cargo/bin:$PATH
+    PATH=/opt/cargo/bin:$PATH \
+    # See https://rust-lang.github.io/rustup/devel/environment-variables.html
+    #   & https://docs.docker.com/engine/storage/drivers/overlayfs-driver/#renaming-directories
+    RUSTUP_PERMIT_COPY_RENAME="1"
 
 RUN \
 # add foreign languages & linker used by rustc 
@@ -111,6 +114,26 @@ WORKDIR /opt
 rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 EOF
 USER root:root
+
+# ---
+# Other general tools:
+#
+# - jaq:      fast json, yaml, toml processing
+# - uv:       for obtaining any python-based tools
+# - graphify: codebase knowledge graph for agents (& people)
+# ---
+
+ENV UV_TOOL_BIN_DIR=/opt/uv/bin \
+    UV_TOOL_DIR=/opt/uv
+ENV PATH=$UV_TOOL_BIN_DIR:$PATH
+
+RUN cargo binstall --secure -y \
+      jaq \
+      uv \
+    && mkdir --mode 777 /opt/graphify ${UV_TOOL_DIR} ${UV_TOOL_BIN_DIR} \
+    # From fork, for mistral support
+    && git clone --branch=feat/vibe-install https://github.com/xavierpestel-ai/graphify /opt/graphify \
+    && uv tool install /opt/graphify
 
 # ---
 # Final setup steps
