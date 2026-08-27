@@ -116,6 +116,26 @@ EOF
 USER root:root
 
 # ---
+# Other general tools:
+#
+# - jaq:      fast json, yaml, toml processing
+# - uv:       for obtaining any python-based tools
+# - graphify: codebase knowledge graph for agents (& people)
+# ---
+
+ENV UV_TOOL_BIN_DIR=/opt/uv/bin \
+    UV_TOOL_DIR=/opt/uv
+ENV PATH=$UV_TOOL_BIN_DIR:$PATH
+
+RUN cargo binstall --secure -y \
+      jaq \
+      uv \
+    && mkdir --mode 777 /opt/graphify ${UV_TOOL_DIR} ${UV_TOOL_BIN_DIR} \
+    # From fork, for mistral support
+    && git clone --branch=feat/vibe-install https://github.com/xavierpestel-ai/graphify /opt/graphify \
+    && uv tool install /opt/graphify
+
+# ---
 # Final setup steps
 # ---
 
