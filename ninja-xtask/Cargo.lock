@@ -421,7 +421,6 @@ dependencies = [
  "dircpy",
  "exit_safely",
  "ninja-build_rs 0.5.4",
- "serde",
  "serde_json",
  "tempfile",
  "try_v2 0.10.1",
