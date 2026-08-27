@@ -43,10 +43,10 @@ RUN dnf update \
   && dnf clean all
 
 # Ensure cache, data etc is not stored in /root for tools like uv
-ENV $XDG_CACHE_HOME=/var/.cache \
-    $XDG_DATA_HOME=/var/.local \
-    $XDG_CONFIG_HOME=/var/.config \
-    $XDG_BIN_HOME=/opt/bin
+ENV XDG_CACHE_HOME=/var/.cache \
+    XDG_DATA_HOME=/var/.local \
+    XDG_CONFIG_HOME=/var/.config \
+    XDG_BIN_HOME=/opt/bin
 
 RUN mkdir --parents --mode=777 /var/.cache \
   && mkdir --parents --mode=777 /var/.local \
