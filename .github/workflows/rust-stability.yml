@@ -30,16 +30,12 @@ jobs:
         with:
           matrix: |
             channel: ["stable", "beta", "nightly"]
-            crate: ["ninja-xtask", "ninja-build_rs"]
 
   test:
     needs: crates
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
-    defaults:
-      run:
-        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
@@ -55,9 +51,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.crates.outputs.matrix) }}
-    defaults:
-      run:
-        working-directory: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
