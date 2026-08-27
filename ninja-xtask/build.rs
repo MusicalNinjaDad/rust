@@ -1,4 +1,4 @@
-use ninja_build_rs::prelude::*;
+use build_safely::prelude::*;
 
 fn main() -> Result<()> {
     let allowed_features = cargo_allowed_features()?;
