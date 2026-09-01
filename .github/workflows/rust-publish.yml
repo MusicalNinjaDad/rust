@@ -108,7 +108,7 @@ jobs:
           ref: ${{ github.event.release.target_commitish }}
 
       - name: install toml-cli
-        uses: taiki-e/install-action@v2.86.7
+        uses: taiki-e/install-action@v2.87.1
         with:
           tool: toml-cli
 
@@ -147,12 +147,12 @@ jobs:
         uses: mlugg/setup-zig@v2
 
       - name: install build tooling
-        uses: taiki-e/install-action@v2.86.7
+        uses: taiki-e/install-action@v2.87.1
         with:
           tool: "cargo-zigbuild,cargo-about"
 
       - name: install binstallable ninja 
-        uses: taiki-e/install-action@v2.86.7
+        uses: taiki-e/install-action@v2.87.1
         with:
           tool: ninja-xtask@0.2.2
 
