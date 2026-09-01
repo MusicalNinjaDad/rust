@@ -1,0 +1,13 @@
+# user specific stuff
+logs/**
+plans/**
+*.toml
+*.json
+vibehistory
+
+# API KEY!!!
+.env
+.connector_bootstrap_cache.json.lock
+
+# project specific stuff
+!hooks.toml

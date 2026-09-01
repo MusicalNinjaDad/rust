@@ -1,4 +1,6 @@
 [alias]
-x = "run --package ninja-xtask -- ninja"
 bld = "ninja build"
 stage = "ninja stage"
+
+[env]
+LD_LIBRARY_PATH = { value = "", force = true }
