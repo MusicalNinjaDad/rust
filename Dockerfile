@@ -99,8 +99,6 @@ WORKDIR /opt
     && rustup toolchain install stable beta nightly \
     && rustup component add \
             clippy \
-            llvm-tools \
-            llvm-tools-preview \
             rustfmt \
             rust-src \
     && cargo binstall --secure -y \ 
