@@ -95,8 +95,8 @@ WORKDIR /opt
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
-    # beta & nightly add 2Gb each to the image, but I use them a lot ...
-    && rustup toolchain install stable beta nightly \
+    # Don't bother with nightly, as pulling larger base image then updating is slower than just installing via updateContentCommand
+    && rustup toolchain install stable \
     && rustup component add \
             clippy \
             rustfmt \
