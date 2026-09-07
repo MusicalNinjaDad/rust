@@ -3,18 +3,29 @@ updates:
 - package-ecosystem: "cargo"
   directories:
     - "ninja-xtask"
-    - "ninja-build_rs"
+  schedule:
+    interval: "weekly"
+  cooldown:
+    default-days: 10
+- package-ecosystem: "docker"
+  directory: "/"
+  # trust fedora to release images fast to fix CVEs
   schedule:
     interval: "daily"
 - package-ecosystem: "docker"
   directory: "/.devcontainer"
+  # this is our own image
   schedule:
     interval: "daily"
 - package-ecosystem: "devcontainers"
   directory: "/"
   schedule:
-    interval: "daily"
+    interval: "weekly"
+  cooldown:
+    default-days: 10
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:
-    interval: "daily"
+    interval: "weekly"
+  cooldown:
+    default-days: 10

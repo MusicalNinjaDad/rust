@@ -1,4 +1,4 @@
-FROM fedora:latest@sha256:498c452f32a739b61f0ef215bce9924ebc4866cbe44710f58157d77723b7a6d2
+FROM fedora:latest@sha256:43b29f65a41eb9c35e1cd5323e3bdf3b655c2357a9f4f1ff2f9c2798e5045d80
 
 # ---
 # Setup base system ...
@@ -95,12 +95,10 @@ WORKDIR /opt
     RUN umask 0002 \
     && chmod a+x rustup/rustup-init \
     && rustup/rustup-init -v -y \
-    # beta & nightly add 2Gb each to the image, but I use them a lot ...
-    && rustup toolchain install stable beta nightly \
+    # Don't bother with nightly, as pulling larger base image then updating is slower than just installing via updateContentCommand
+    && rustup toolchain install stable \
     && rustup component add \
             clippy \
-            llvm-tools \
-            llvm-tools-preview \
             rustfmt \
             rust-src \
     && cargo binstall --secure -y \ 
