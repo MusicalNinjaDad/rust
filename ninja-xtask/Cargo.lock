@@ -414,7 +414,7 @@ dependencies = [
  "exit_safely",
  "serde_json",
  "tempfile",
- "try_v2 0.10.1",
+ "try_v2 0.11.0",
 ]
 
 [[package]]
@@ -453,13 +453,13 @@ dependencies = [
 
 [[package]]
 name = "proc_macro2_diagnostic"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98216f5c14bf8eec9b009fd78de5eb657926243bb2aaf2e559af5a3eae7d6913"
+checksum = "8b835c85056f71b95da5f5c415059b59251976e228559983b628ef7374c0967e"
 dependencies = [
  "build_safely",
  "proc-macro2",
- "syn 2.0.119",
+ "syn 3.0.4",
  "try_v2_traits 0.10.1",
 ]
 
@@ -657,14 +657,14 @@ dependencies = [
 
 [[package]]
 name = "try_v2"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "036ac5e964339c6b1c3b11bcb46278786c8c8882903920c57bfea84fa2ebf414"
+checksum = "18bb24dcc5f6d1278d97651c4ef8e93788019efa8de48eb9b282d0df5be56585"
 dependencies = [
  "autocfg",
  "build_safely",
- "try_v2_derive 0.10.1",
- "try_v2_traits 0.10.1",
+ "try_v2_derive 0.11.0",
+ "try_v2_traits 0.11.0",
 ]
 
 [[package]]
@@ -683,16 +683,16 @@ dependencies = [
 
 [[package]]
 name = "try_v2_derive"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a744c58d9ab0eca2934858fadb325dd796e6112a2d973e920e3ba613bba42da"
+checksum = "9520749c739c57064f4498c4a11477a10bd6dca7dd5b3bc90fcad6f262a43bde"
 dependencies = [
  "autocfg",
  "build_safely",
  "proc-macro2",
- "proc_macro2_diagnostic 0.7.0",
+ "proc_macro2_diagnostic 0.8.0",
  "quote",
- "syn 2.0.119",
+ "syn 3.0.4",
 ]
 
 [[package]]
@@ -710,6 +710,16 @@ name = "try_v2_traits"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "625990d998c1436aeb59720750929fe4efaebc940b5f802b0da0efeed4167a17"
+dependencies = [
+ "autocfg",
+ "build_safely",
+]
+
+[[package]]
+name = "try_v2_traits"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3689fd3a35c266f23b5c5a6c9cd7c35c784f033f92635178d765033348be99ed"
 dependencies = [
  "autocfg",
  "build_safely",
