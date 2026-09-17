@@ -25,7 +25,7 @@ clap = { version = "4.6.0", features = ["derive"] }
 clap-cargo = "0.19.0"
 exit_safely = "0.3.3"
 serde_json = "1.0.151"
-try_v2 = "0.10.1"
+try_v2 = "0.11.0"
 
 [dev-dependencies]
 dircpy = "0.3.20"
