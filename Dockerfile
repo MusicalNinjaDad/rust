@@ -126,6 +126,7 @@ USER root:root
 # ---
 # Other general tools:
 #
+# - ripgrep:  fast grep
 # - jaq:      fast json, yaml, toml processing
 # - uv:       for obtaining any python-based tools
 # - graphify: codebase knowledge graph for agents (& people)
@@ -136,6 +137,7 @@ ENV UV_TOOL_BIN_DIR=/opt/uv/bin \
 ENV PATH=$UV_TOOL_BIN_DIR:$PATH
 
 RUN cargo binstall --secure -y \
+      ripgrep \
       jaq \
       uv \
     && mkdir --mode 777 /opt/graphify ${UV_TOOL_DIR} ${UV_TOOL_BIN_DIR} \
