@@ -33,4 +33,4 @@ tempfile = "3.27.0"
 
 [build-dependencies]
 autocfg = "1.5.1"
-build_safely = "0.5.4"
+build_safely = "0.6.0"
