@@ -1,2 +1,2 @@
 # Base image source: https://raw.githubusercontent.com/MusicalNinjaDad/rust/refs/heads/main/Dockerfile
-FROM ghcr.io/musicalninjadad/rust-devcontainer:latest@sha256:5f89adffdfe595ee73e7975afb8338b6ae2d6f389fb4f022836d8d46dc59f962
+FROM ghcr.io/musicalninjadad/rust-devcontainer:latest@sha256:80fee36d55148c1b1dec0f774a750c70b51406c32d6068590d1c52bc211dd3b2
